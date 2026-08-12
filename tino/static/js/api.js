@@ -172,6 +172,33 @@ export class TinoAPI extends GitAPI {
     return this._fetch(`${bucketPath(slug)}/compile/svg/${path}`)
   }
 
+  // ── Editor tooling ──
+
+  /**
+   * Format a Typst buffer with typstyle.
+   * @param {string} slug - Bucket the buffer belongs to.
+   * @param {string} content - The (possibly unsaved) source text.
+   * @returns {Promise<{content: string}>} The formatted source.
+   */
+
+  format(slug, content) {
+    return this._json('POST', `${bucketPath(slug)}/format`, { content })
+  }
+
+  /**
+   * Check a buffer for errors with tinymist, without saving it first.
+   * @param {string} slug - Bucket the buffer belongs to.
+   * @param {string} path - Path the buffer is edited at (resolves imports).
+   * @param {string} content - The (possibly unsaved) source text.
+   * @returns {Promise<{diagnostics: Array}>} LSP-shaped diagnostics.
+   */
+
+  diagnostics(slug, path, content) {
+    return this._json(
+      'POST', `${bucketPath(slug)}/diagnostics/${path}`, { content },
+    )
+  }
+
   // ── Templates ──
 
   /** Fetch templates from the Typst Universe package index. */

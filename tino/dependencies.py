@@ -11,8 +11,10 @@ from .models import User
 from .notifier import BucketNotifier
 from .services.bucket import BucketService
 from .services.compiler import CompilerService
+from .services.diagnostics import DiagnosticsService
 from .services.file import FileService
 from .services.font import FontService
+from .services.formatter import FormatterService
 from .services.git import GitService
 from .services.search import SearchService
 from .services.template import TemplateService
@@ -73,6 +75,19 @@ def get_compiler_service() -> CompilerService:
     '''Singleton CompilerService bound to the configured bucket directory.'''
     return CompilerService(config.TINO_BUCKET_DIR, config.TINO_PACKAGE_DIR,
                            config.TINO_FONT_DIR)
+
+
+@lru_cache
+def get_formatter_service() -> FormatterService:
+    '''Singleton FormatterService using the configured typstyle style settings.'''
+    return FormatterService(config.TINO_FORMAT_LINE_WIDTH, config.TINO_FORMAT_INDENT_WIDTH)
+
+
+@lru_cache
+def get_diagnostics_service() -> DiagnosticsService:
+    '''Singleton DiagnosticsService running one tinymist language server per bucket.'''
+    return DiagnosticsService(config.TINO_BUCKET_DIR, config.TINO_PACKAGE_DIR,
+                              config.TINO_FONT_DIR, config.TINO_LSP_TTL)
 
 
 @lru_cache

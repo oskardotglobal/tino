@@ -53,6 +53,10 @@ export const SEARCH_DEBOUNCE_MS = 200
 
 export const SAVE_DEBOUNCE_MS = 250
 
+/** Idle delay (ms) after typing before the editor asks tinymist for errors. */
+
+export const LINT_DEBOUNCE_MS = 500
+
 /** Length argument for single-item splice operations. */
 
 export const SINGLE_ITEM = 1

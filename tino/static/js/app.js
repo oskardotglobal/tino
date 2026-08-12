@@ -5,6 +5,7 @@ import { ApiKeyManager } from './api-key-manager.js'
 import { BucketEvents } from './bucket-events.js'
 import { CodeMirrorEditor } from './codemirror-editor.js'
 import { EditorManager } from './editor-manager.js'
+import { EditorTooling } from './editor-tooling.js'
 import { FileTree } from './file-tree.js'
 import { FontManager } from './font-manager.js'
 import { GitManager } from './git-manager.js'
@@ -60,6 +61,7 @@ class TinoApp {
       cursorPos: document.getElementById('cursor-pos'),
       editor: new CodeMirrorEditor(document.getElementById('editor'), {
         onCursor: () => this.editor.input.updateCursorPos(),
+        onFormat: () => this.tooling.format.run(),
         statusHost: document.getElementById('keymap-status'),
       }),
       editorEmpty: document.getElementById('editor-empty'),
@@ -92,6 +94,7 @@ class TinoApp {
   }
 
   _initDialogs() {
+    this.tooling = new EditorTooling(this)
     this.fontManager = new FontManager(this)
     this.apiKeyManager = new ApiKeyManager(this)
     this.templatePicker = new TemplatePicker(this)
@@ -107,6 +110,7 @@ class TinoApp {
     this._bindAll()
     applyRoleVisibility(this)
     this.config = await this.api.config()
+    this.tooling.bind()
     setLogoVersionTooltip(this)
     bindLogoRepoLink(this)
     await this.reloadUser()

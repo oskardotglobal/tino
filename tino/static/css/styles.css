@@ -919,6 +919,64 @@ html, body {
   border-radius: var(--radius) var(--radius) var(--radius) 0;
 }
 
+/*
+ * Diagnostics (tinymist): CodeMirror's lint extension paints its own wavy
+ * underline as a background image, which does not follow the theme. It is
+ * replaced with a text decoration in the palette's colours.
+ */
+
+.editor .cm-lintRange {
+  background-image: none;
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.editor .cm-lintRange-error { text-decoration-color: var(--cd-red-50); }
+
+.editor .cm-lintRange-warning { text-decoration-color: var(--cd-yellow-50); }
+
+.editor .cm-lintRange-info,
+.editor .cm-lintRange-hint { text-decoration-color: var(--cd-azure-50); }
+
+.editor .cm-tooltip {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.editor .cm-diagnostic {
+  padding: 6px 8px;
+  border-left-width: 3px;
+}
+
+.editor .cm-diagnostic-error { border-left-color: var(--cd-red-50); }
+
+.editor .cm-diagnostic-warning { border-left-color: var(--cd-yellow-50); }
+
+.editor .cm-diagnostic-info,
+.editor .cm-diagnostic-hint { border-left-color: var(--cd-azure-50); }
+
+.editor .cm-diagnosticSource {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.editor .cm-panel.cm-panel-lint {
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.editor .cm-panel.cm-panel-lint ul [aria-selected] {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
 /* stylelint-enable selector-class-pattern, no-descending-specificity */
 
 /* ── Typst syntax tokens ── */
@@ -1077,6 +1135,13 @@ html, body {
 
 #status-bar-modified {
   margin-left: auto;
+}
+
+/* Problem count from the editor's error detection (see editor-diagnostics.js). */
+
+.status-problems {
+  color: var(--cd-red-50);
+  font-weight: 600;
 }
 
 /*

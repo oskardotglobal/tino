@@ -99,6 +99,14 @@ class FileEntry(BaseModel):
     type: str  # file | directory
 
 
+# ── Editor tooling ──
+
+
+class SourceBuffer(BaseModel):
+    '''Request body carrying the editor's current (possibly unsaved) buffer.'''
+    content: str
+
+
 # ── Search ──
 
 

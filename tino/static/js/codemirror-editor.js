@@ -3,25 +3,10 @@ import {
   Compartment,
   EditorState,
   EditorView,
-  bracketMatching,
-  codeFolding,
-  defaultKeymap,
-  drawSelection,
-  foldGutter,
-  foldKeymap,
-  gotoLine,
-  history,
-  historyKeymap,
-  indentOnInput,
-  indentUnit,
-  indentWithTab,
-  keymap,
-  lineNumbers,
+  diagnosticCount,
   panels,
-  searchKeymap,
-  selectNextOccurrence,
 } from './vendor/codemirror.js'
-import { typst, typstKeymap } from './codemirror-typst.js'
+import { editorExtensions, lintExtension } from './codemirror-extensions.js'
 import { SINGLE_ITEM } from './constants.js'
 import { keymapExtension } from './codemirror-keymaps.js'
 
@@ -48,6 +33,7 @@ export class CodeMirrorEditor {
    * @param {Function} [opts.onChange] - Called on user (non-programmatic) edits.
    * @param {HTMLElement} [opts.statusHost] - Element hosting the keymap status
    *   bars (Vim's mode line, Helix's NOR indicator) instead of the editor.
+   * @param {Function} [opts.onFormat] - Called by the format key binding.
    */
 
   constructor(parent, opts = {}) {
@@ -55,20 +41,18 @@ export class CodeMirrorEditor {
     this._statusHost = opts.statusHost
     this._onCursor = opts.onCursor || _noop
     this._onChange = opts.onChange || _noop
-    this._editable = new Compartment()
-    this._collab = new Compartment()
-    this._keymap = new Compartment()
-    this._wrap = new Compartment()
+    this._onFormat = opts.onFormat || _noop
+    this._parts = {
+      collab: new Compartment(),
+      editable: new Compartment(),
+      keymap: new Compartment(),
+      lint: new Compartment(),
+      wrap: new Compartment(),
+    }
     this._view = new EditorView({
       parent,
       state: this._buildState(''),
     })
-  }
-
-  /** Undo/redo history — always active, so Vim's `u`, Ctrl-r and Ctrl-Z agree. */
-
-  static _historyExt() {
-    return [history(), keymap.of(historyKeymap)]
   }
 
   /**
@@ -79,7 +63,26 @@ export class CodeMirrorEditor {
    */
 
   setCollab(ext) {
-    this._view.dispatch({ effects: this._collab.reconfigure(ext || []) })
+    this._view.dispatch({ effects: this._parts.collab.reconfigure(ext || []) })
+  }
+
+  /**
+   * Bind or unbind the diagnostics source that underlines errors in the
+   * document. CodeMirror polls it after edits, debounced.
+   * @param {Function|null} source - `view => Promise<Diagnostic[]>`, or null to
+   *   turn error detection off.
+   */
+
+  setLintSource(source) {
+    this._view.dispatch({
+      effects: this._parts.lint.reconfigure(lintExtension(source)),
+    })
+  }
+
+  /** @returns {number} How many diagnostics the document currently has. */
+
+  get problemCount() {
+    return diagnosticCount(this._view.state)
   }
 
   /**
@@ -88,7 +91,7 @@ export class CodeMirrorEditor {
    */
 
   setKeymap(mode) {
-    this._view.dispatch({ effects: this._keymap.reconfigure(keymapExtension(mode)) })
+    this._view.dispatch({ effects: this._parts.keymap.reconfigure(keymapExtension(mode)) })
   }
 
   /**
@@ -99,7 +102,7 @@ export class CodeMirrorEditor {
   toggleLineWrap() {
     this._wrapOn = this._wrapOn === false
     this._view.dispatch({
-      effects: this._wrap.reconfigure(this._wrapOn ? EditorView.lineWrapping : []),
+      effects: this._parts.wrap.reconfigure(this._wrapOn ? EditorView.lineWrapping : []),
     })
     return this._wrapOn
   }
@@ -120,66 +123,13 @@ export class CodeMirrorEditor {
   _buildState(doc) {
     return EditorState.create({
       doc,
-      extensions: [
-        this._keymap.of([]),
-        this._panels(),
-        this._wrap.of(EditorView.lineWrapping),
-        lineNumbers(),
-        drawSelection(),
-        foldGutter(),
-        codeFolding(),
-        bracketMatching(),
-        indentUnit.of('  '),
-        EditorState.allowMultipleSelections.of(true),
-        indentOnInput(),
-        CodeMirrorEditor._historyExt(),
-        this._collab.of([]),
-        typst(),
-        keymap.of([
-          CodeMirrorEditor._saveBinding(),
-          CodeMirrorEditor._gotoLineBinding(),
-          CodeMirrorEditor._selectNextBinding(),
-          ...typstKeymap,
-          indentWithTab,
-          ...searchKeymap,
-          ...foldKeymap,
-          ...defaultKeymap,
-        ]),
-        this._editable.of(EditorView.editable.of(true)),
-        EditorView.updateListener.of(update => this._onUpdate(update)),
-      ],
+      extensions: editorExtensions({
+        compartments: this._parts,
+        onFormat: () => this._onFormat(),
+        onUpdate: update => this._onUpdate(update),
+        panelExt: this._panels(),
+      }),
     })
-  }
-
-  /*
-   * Files save themselves after a short idle delay, so Mod-s has nothing to do.
-   * It is still bound (and reported as handled) purely to swallow the browser's
-   * "save page as" dialog, which would otherwise fire inside the editor.
-   */
-
-  static _saveBinding() {
-    return { key: 'Mod-s', preventDefault: true, run: () => true }
-  }
-
-  static _gotoLineBinding() {
-    return { key: 'Mod-g', preventDefault: true, run: view => gotoLine(view) }
-  }
-
-  /*
-   * Mod-d selects the next occurrence (multi-cursor). Always report the key as
-   * handled so the browser's Mod-d (bookmark) is suppressed even when there is
-   * no further occurrence — otherwise the bookmark dialog leaks through.
-   */
-
-  static _selectNextBinding() {
-    return {
-      key: 'Mod-d',
-      preventDefault: true,
-      run: view => {
-        selectNextOccurrence(view)
-        return true
-      },
-    }
   }
 
   _onUpdate(update) {
@@ -220,6 +170,47 @@ export class CodeMirrorEditor {
     })
   }
 
+  /**
+   * Replace the document with new text as an ordinary edit: the change is
+   * reported (so the file is marked dirty and saved) and propagates over
+   * collaboration. Only the differing middle section is replaced, so the caret,
+   * the remote cursors and the undo history all survive a reformat of a part of
+   * the document.
+   * @param {string} text - The new document content.
+   * @returns {boolean} True when the document changed.
+   */
+
+  replaceText(text) {
+    const current = this.content
+    if (text === current)
+      return false
+    const change = CodeMirrorEditor._minimalChange(current, text)
+    this._view.dispatch({ changes: change })
+    return true
+  }
+
+  /* Narrow a whole-document rewrite down to the span that actually differs, by
+     skipping the common prefix and the common suffix. */
+
+  static _minimalChange(current, text) {
+    const max = Math.min(current.length, text.length)
+    let start = 0
+    while (start < max && current[start] === text[start])
+      start += SINGLE_ITEM
+    let trail = 0
+    while (
+      trail < max - start
+      && current[current.length - trail - SINGLE_ITEM]
+        === text[text.length - trail - SINGLE_ITEM]
+    )
+      trail += SINGLE_ITEM
+    return {
+      from: start,
+      insert: text.slice(start, text.length - trail),
+      to: current.length - trail,
+    }
+  }
+
   /** @returns {{from: number, to: number}} The main selection range. */
 
   get selection() {
@@ -241,7 +232,7 @@ export class CodeMirrorEditor {
 
   setEditable(editable) {
     const editableState = EditorView.editable.of(editable)
-    this._view.dispatch({ effects: this._editable.reconfigure(editableState) })
+    this._view.dispatch({ effects: this._parts.editable.reconfigure(editableState) })
   }
 
   /** @param {boolean} hidden - Toggle the host element's `hidden` class. */

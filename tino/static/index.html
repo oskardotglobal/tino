@@ -145,6 +145,10 @@
             <span class="material-symbols-outlined">function</span>
           </button>
           <span class="fmt-sep"></span>
+          <button class="fmt-btn" data-action="format"
+            title="Format document with typstyle (Shift+Alt+F)">
+            <span class="material-symbols-outlined">format_align_left</span>
+          </button>
           <button class="fmt-btn active" data-action="wrap" title="Word wrap">
             <span class="material-symbols-outlined">wrap_text</span>
           </button>
@@ -200,6 +204,7 @@
             <span id="cursor-pos">Ln 1, Col 1</span>
             <span class="keymap-status" id="keymap-status"></span>
             <span id="status-bar-modified"></span>
+            <span class="status-problems hidden" id="status-bar-problems"></span>
             <button class="status-btn" id="btn-history" title="File history">
               <span class="material-symbols-outlined">history</span>
             </button>

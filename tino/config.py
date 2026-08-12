@@ -16,7 +16,10 @@ __all__ = (
     "TINO_DATA_DIR",
     "TINO_DEFAULT_ROLE",
     "TINO_FONT_DIR",
+    "TINO_FORMAT_INDENT_WIDTH",
+    "TINO_FORMAT_LINE_WIDTH",
     "TINO_LOG_LEVEL",
+    "TINO_LSP_TTL",
     "TINO_OIDC_CLIENT_ID",
     "TINO_OIDC_CLIENT_SECRET",
     "TINO_OIDC_DISCOVERY_URL",
@@ -152,6 +155,17 @@ TINO_ACCENT_COLOUR = environ.get("TINO_ACCENT_COLOUR", "orange")
 #: .. important::
 #:  The document is rendered from the (saved) file on disk, thus auto saving is recommended.
 TINO_SAVE_DEBOUNCE_MS = int(environ.get("TINO_SAVE_DEBOUNCE_MS", "250"))
+
+#: ⭕ Maximum line width used by the ``typstyle`` formatter in the editor.
+TINO_FORMAT_LINE_WIDTH = int(environ.get("TINO_FORMAT_LINE_WIDTH", "80"))
+
+#: ⭕ Number of spaces per indentation level used by the ``typstyle`` formatter.
+TINO_FORMAT_INDENT_WIDTH = int(environ.get("TINO_FORMAT_INDENT_WIDTH", "2"))
+
+#: ⭕ Seconds to keep a bucket's ``tinymist`` language server alive after the last
+#: error check. The server provides the editor's live error detection; keeping it
+#: warm avoids re-reading fonts and packages on every check.
+TINO_LSP_TTL = int(environ.get("TINO_LSP_TTL", "300"))
 
 #: ⭕ Seconds to keep a collaboration room alive after the last client disconnects.
 #: Allows reconnecting clients (e.g. page refresh) to reuse the room.

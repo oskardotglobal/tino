@@ -9,6 +9,10 @@ Prerequisites
 - Python 3.14+
 - Node.js (for vendored JS and linters)
 - `Typst CLI <https://github.com/typst/typst>`_
+- `typstyle <https://github.com/typstyle-rs/typstyle>`_ (optional — the editor's
+  :ref:`formatting <Formatting>`)
+- `tinymist <https://github.com/Myriad-Dreamin/tinymist>`_ (optional — the
+  editor's :ref:`error detection <Error detection>`)
 - Git with `Git LFS <https://git-lfs.com/>`_
 
 Project setup

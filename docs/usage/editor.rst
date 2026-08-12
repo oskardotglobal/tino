@@ -5,7 +5,8 @@
 
 TINO's editor is built on `CodeMirror 6 <https://codemirror.net/>`_ and
 offers Typst-aware syntax highlighting, structural indentation, search and
-navigation, code folding, and optional Vim or Helix keybindings.
+navigation, code folding, document formatting, live error detection, and
+optional Vim or Helix keybindings.
 
 Tabs
 ~~~~
@@ -70,6 +71,9 @@ For the full syntax reference, see the `Typst documentation <https://typst.app/d
    * - Math
      - :code:`$…$`
      - Wrap the selection in dollar signs.
+   * - Format document
+     - —
+     - Reformat the whole file with :ref:`typstyle <Formatting>`.
 
 Indentation
 ~~~~~~~~~~~
@@ -106,6 +110,66 @@ Keyboard shortcuts
      - Go to line.
    * - :kbd:`Ctrl+D` / :kbd:`⌘D`
      - Select the next occurrence of the selection (multi-cursor).
+   * - :kbd:`Shift+Alt+F`
+     - Format the document (see :ref:`Formatting`).
+   * - :kbd:`F8` / :kbd:`Shift+F8`
+     - Jump to the next / previous problem (see :ref:`Error detection`).
+   * - :kbd:`Ctrl+Shift+M` / :kbd:`⌘⇧M`
+     - Open the problem list panel.
+
+.. _Formatting:
+
+Formatting
+~~~~~~~~~~
+
+``.typ`` files can be reformatted with
+`typstyle <https://github.com/typstyle-rs/typstyle>`_ — the same formatter used
+by the Typst tooling elsewhere. Press :kbd:`Shift+Alt+F` or click the
+**Format document** button in the toolbar.
+
+Formatting applies to the buffer as it is on screen, unsaved changes included,
+and only rewrites the part of the document that actually differs. The cursor
+keeps its place, collaborators see the reformat as an ordinary edit, and the
+result is autosaved like any other change. If the file does not parse, typstyle
+leaves it untouched.
+
+The style is configured server-side with
+:attr:`TINO_FORMAT_LINE_WIDTH <tino.config.TINO_FORMAT_LINE_WIDTH>` and
+:attr:`TINO_FORMAT_INDENT_WIDTH <tino.config.TINO_FORMAT_INDENT_WIDTH>`.
+
+.. note::
+
+   The button and the shortcut are only available when the server has the
+   ``typstyle`` binary — the official Docker image ships it for all platforms
+   with an upstream release.
+
+.. _Error detection:
+
+Error detection
+~~~~~~~~~~~~~~~
+
+While you type, ``.typ`` files are checked by
+`tinymist <https://github.com/Myriad-Dreamin/tinymist>`_, the Typst language
+server. Errors and warnings are underlined in the document, marked in the gutter
+beside the line numbers, and counted in the editor's status bar. Hover a marker
+or an underline to read the message.
+
+Checks run on the buffer as it is on screen — unsaved changes included, and
+before a compile — so a mistake shows up as soon as you pause typing rather than
+when the preview next renders. Imports and packages resolve relative to the
+project, exactly as they do for the compiled document.
+
+.. hint::
+
+   Use :kbd:`F8` to walk through the problems, and :kbd:`Ctrl+Shift+M` to open
+   them as a list.
+
+.. note::
+
+   Error detection needs the ``tinymist`` binary on the server. One language
+   server is started per project on demand and shut down again after
+   :attr:`TINO_LSP_TTL <tino.config.TINO_LSP_TTL>` seconds without a check. When the binary is
+   missing, the editor silently does without it.
 
 Folding and brackets
 ~~~~~~~~~~~~~~~~~~~~~~

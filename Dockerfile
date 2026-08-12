@@ -3,6 +3,12 @@ FROM python:3.14-slim
 # renovate: github-releases depName=typst/typst
 ARG TYPST_VERSION=0.15.1
 
+# renovate: github-releases depName=typstyle-rs/typstyle
+ARG TYPSTYLE_VERSION=0.15.1
+
+# renovate: github-releases depName=Myriad-Dreamin/tinymist
+ARG TINYMIST_VERSION=0.15.2
+
 # Populated automatically by BuildKit/buildx from the target platform.
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -23,6 +29,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lf
        esac \
     && curl -sSfL https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${TYPST_TARGET}.tar.xz \
        | tar -xJ --strip-components=1 -C /usr/local/bin typst-${TYPST_TARGET}/typst \
+    # The editor's error detection (tinymist) and formatting (typstyle) are
+    # optional: TINO reports them as unavailable and hides them in the UI when
+    # the binary is missing, so a platform without a release is not a build
+    # failure. typstyle ships plain binaries, tinymist a tarball.
+    && case "$TARGETARCH/$TARGETVARIANT" in \
+         amd64/*)   TINYMIST_TARGET=x86_64-unknown-linux-musl ;; \
+         arm64/*)   TINYMIST_TARGET=aarch64-unknown-linux-musl ;; \
+         arm/v7)    TINYMIST_TARGET=armv7-unknown-linux-musleabihf ;; \
+         riscv64/*) TINYMIST_TARGET=riscv64gc-unknown-linux-musl ;; \
+       esac \
+    && if [ -n "$TINYMIST_TARGET" ]; then \
+         curl -sSfL https://github.com/Myriad-Dreamin/tinymist/releases/download/v${TINYMIST_VERSION}/tinymist-${TINYMIST_TARGET}.tar.gz \
+         | tar -xz --strip-components=1 -C /usr/local/bin tinymist-${TINYMIST_TARGET}/tinymist; \
+       else \
+         echo "No tinymist binary for '${TARGETARCH}/${TARGETVARIANT}' — error detection disabled" >&2; \
+       fi \
+    && case "$TARGETARCH/$TARGETVARIANT" in \
+         amd64/*) TYPSTYLE_TARGET=x86_64-unknown-linux-gnu ;; \
+         arm64/*) TYPSTYLE_TARGET=aarch64-unknown-linux-gnu ;; \
+         arm/v7)  TYPSTYLE_TARGET=arm-unknown-linux-gnueabihf ;; \
+       esac \
+    && if [ -n "$TYPSTYLE_TARGET" ]; then \
+         curl -sSfLo /usr/local/bin/typstyle https://github.com/typstyle-rs/typstyle/releases/download/v${TYPSTYLE_VERSION}/typstyle-${TYPSTYLE_TARGET} \
+         && chmod +x /usr/local/bin/typstyle; \
+       else \
+         echo "No typstyle binary for '${TARGETARCH}/${TARGETVARIANT}' — formatting disabled" >&2; \
+       fi \
     && git lfs install --system \
     && git config --system core.attributesFile /etc/gitattributes \
     && apt-get purge -y --auto-remove xz-utils \
