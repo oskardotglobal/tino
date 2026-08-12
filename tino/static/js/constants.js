@@ -46,6 +46,13 @@ export const SEARCH_MIN_CHARS = 2
 
 export const SEARCH_DEBOUNCE_MS = 200
 
+/**
+ * Fallback autosave delay (ms) when the backend reports none. Saving is fully
+ * automatic — there is no manual save action — so the delay is never zero.
+ */
+
+export const SAVE_DEBOUNCE_MS = 250
+
 /** Length argument for single-item splice operations. */
 
 export const SINGLE_ITEM = 1

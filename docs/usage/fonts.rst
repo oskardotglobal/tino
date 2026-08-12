@@ -14,11 +14,12 @@ automatically available to all documents via the ``--font-path`` flag.
 Managing fonts via the UI
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Administrators can manage fonts directly from the toolbar:
+Administrators can manage fonts from the settings dialog:
 
-1. Click the **font** icon in the top-right toolbar.
-2. Click **Upload fonts** to add one or more font files.
-3. Hover over a font and click the **delete** icon to remove it.
+1. Click the **settings** icon in the top-right toolbar.
+2. Click **Manage** next to **Fonts**.
+3. Click **Upload fonts** to add one or more font files.
+4. Hover over a font and click the **delete** icon to remove it.
 
 .. note::
 

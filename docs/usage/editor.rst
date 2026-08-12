@@ -92,8 +92,6 @@ Keyboard shortcuts
 
    * - Shortcut
      - Action
-   * - :kbd:`Ctrl+S` / :kbd:`⌘S`
-     - Save the current file.
    * - :kbd:`Ctrl+Z` / :kbd:`Ctrl+Y`
      - Undo / redo.
    * - :kbd:`Tab` / :kbd:`Shift+Tab`
@@ -119,22 +117,42 @@ its matching partner is highlighted.
 Vim mode
 ~~~~~~~~
 
-Click **Vim** in the toolbar to enable Vim keybindings. A status bar at the
-bottom of the editor shows the current mode and ``:`` command line, and the
-caret becomes a block cursor in normal mode. The setting is remembered per
-browser — click **Vim** again to return to the default editing mode.
+Open the **settings** icon in the toolbar and switch **Vim mode** on to enable
+Vim keybindings. A status bar at the bottom of the editor shows the current mode
+and ``:`` command line, and the caret becomes a block cursor in normal mode. The
+setting is remembered per browser — switch it off again to return to the default
+editing mode.
 
-The usual motions and operators apply; ``u`` / :kbd:`Ctrl+R` undo and redo, and
-``:w`` saves the file.
+The usual motions and operators apply, and ``u`` / :kbd:`Ctrl+R` undo and redo.
 
 Saving
 ~~~~~~
 
-Files are **auto-saved** a short moment after you stop typing — by default
-250 ms, configurable via
+Files are **saved automatically** a short moment after you stop typing — by
+default 250 ms, configurable via
 :attr:`TINO_SAVE_DEBOUNCE_MS <tino.config.TINO_SAVE_DEBOUNCE_MS>`.
-You can also save manually with the **Save** button, :kbd:`Ctrl+S`, or ``:w`` in
-Vim mode. Unsaved files are marked with a dot on their tab.
+There is no manual save action; :kbd:`Ctrl+S` / :kbd:`⌘S` is swallowed so the
+browser's own "save page" dialog stays out of the way.
+Files with unsaved changes are marked with a dot on their tab.
+
+Settings
+~~~~~~~~
+
+The **settings** icon between the user name and **Logout** opens a dialog with
+the editor preferences — currently :ref:`Vim mode <usage/editor:Vim mode>` —
+plus, for administrators, entry points to :ref:`Fonts` and
+:ref:`API keys <usage/authentication:API keys>`.
+
+Layout
+~~~~~~
+
+The tab bar and the formatting toolbar span the editor *and* the preview, so
+preview actions (**Generate PDF**, zoom) sit on the right of the toolbar and the
+preview **pin** sits on the right of the tabs.
+
+Toggle the file explorer with the panel icon at the far left of the toolbar; the
+choice is remembered per browser. Both the explorer and the preview can be
+resized by dragging their separators.
 
 Preview
 ~~~~~~~

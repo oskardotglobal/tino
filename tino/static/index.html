@@ -15,6 +15,9 @@
   <header class="toolbar">
     <div class="toolbar-left">
       <svg class="logo" id="logo" viewBox="0 0 407 200"><use xlink:href="img/logo.svg#logo"/></svg>
+      <button class="toolbar-btn" id="btn-toggle-explorer" title="Toggle file explorer">
+        <span class="material-symbols-outlined">left_panel_close</span>
+      </button>
       <button class="bucket-btn" id="bucket-btn">
         <span class="material-symbols-outlined">database</span>
         <span id="bucket-label">Select bucket...</span>
@@ -22,10 +25,6 @@
       <button class="toolbar-btn" id="btn-search" title="Search (Ctrl+Shift+F)">
         <span class="material-symbols-outlined">search</span>
         Search
-      </button>
-      <button class="toolbar-btn" id="btn-save" title="Save (Ctrl+S)">
-        <span class="material-symbols-outlined">save</span>
-        Save
       </button>
       <button class="toolbar-btn" id="btn-commit" title="Commit changes">
         <span class="material-symbols-outlined">commit</span>
@@ -42,19 +41,6 @@
     </div>
     <div class="toolbar-center"></div>
     <div class="toolbar-right">
-      <button class="toolbar-btn hidden" id="btn-fonts" title="Manage fonts">
-        <span class="material-symbols-outlined">brand_family</span>
-        Fonts
-      </button>
-      <button class="toolbar-btn hidden" id="btn-api-keys" title="Manage API keys">
-        <span class="material-symbols-outlined">key</span>
-        API Keys
-      </button>
-      <span class="toolbar-sep"></span>
-      <button class="toolbar-btn" id="btn-vim" title="Toggle Vim keybindings">
-        <span class="material-symbols-outlined">keyboard</span>
-        Vim
-      </button>
       <button class="toolbar-btn" id="btn-theme" title="Toggle theme">
         <span class="material-symbols-outlined icon-sun">light_mode</span>
         <span class="material-symbols-outlined icon-moon">dark_mode</span>
@@ -64,6 +50,9 @@
         <span class="material-symbols-outlined">person</span>
         <span id="user-label">...</span>
       </span>
+      <button class="toolbar-btn" id="btn-settings" title="Settings">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
       <button class="toolbar-btn" id="btn-logout" title="Logout">
         <span class="material-symbols-outlined">logout</span>
       </button>
@@ -96,80 +85,64 @@
 
     <div class="resize-handle" id="resize-left"></div>
 
-    <section class="panel editor-panel" id="editor-panel">
+    <section class="workarea" id="workarea">
       <div class="panel-header">
         <div class="tab-bar" id="tab-bar"></div>
         <button class="icon-btn" id="btn-close-all-tabs" title="Close all tabs">
           <span class="material-symbols-outlined">close</span>
         </button>
-      </div>
-      <div class="editor-toolbar hidden" id="editor-toolbar">
-        <button class="fmt-btn" data-action="bold" title="Bold (*…*)">
-          <span class="material-symbols-outlined">format_bold</span>
-        </button>
-        <button class="fmt-btn" data-action="italic" title="Italic (_…_)">
-          <span class="material-symbols-outlined">format_italic</span>
-        </button>
-        <span class="fmt-sep"></span>
-        <button class="fmt-btn" data-action="heading" title="Heading (= )">
-          <span class="material-symbols-outlined">title</span>
-        </button>
-        <button class="fmt-btn" data-action="bullet" title="Bullet list (- )">
-          <span class="material-symbols-outlined">format_list_bulleted</span>
-        </button>
-        <button class="fmt-btn" data-action="numbered" title="Numbered list (+ )">
-          <span class="material-symbols-outlined">format_list_numbered</span>
-        </button>
-        <span class="fmt-sep"></span>
-        <button class="fmt-btn" data-action="link" title="Link">
-          <span class="material-symbols-outlined">link</span>
-        </button>
-        <button class="fmt-btn" data-action="image" title="Image">
-          <span class="material-symbols-outlined">image</span>
-        </button>
-        <button class="fmt-btn" data-action="table" title="Table">
-          <span class="material-symbols-outlined">table</span>
-        </button>
-        <span class="fmt-sep"></span>
-        <button class="fmt-btn" data-action="code" title="Inline code (`…`)">
-          <span class="material-symbols-outlined">code</span>
-        </button>
-        <button class="fmt-btn" data-action="codeblock" title="Code block (```…```)">
-          <span class="material-symbols-outlined">code_blocks</span>
-        </button>
-        <button class="fmt-btn" data-action="math" title="Math ($…$)">
-          <span class="material-symbols-outlined">function</span>
-        </button>
-        <span class="fmt-sep"></span>
-        <button class="fmt-btn active" data-action="wrap" title="Word wrap">
-          <span class="material-symbols-outlined">wrap_text</span>
-        </button>
-      </div>
-      <div class="editor-wrap">
-        <div class="editor" id="editor"></div>
-        <div class="binary-preview hidden" id="binary-preview"></div>
-      </div>
-      <div class="status-bar">
-        <span id="cursor-pos">Ln 1, Col 1</span>
-        <span id="status-bar-modified"></span>
-        <button class="status-btn" id="btn-history" title="File history">
-          <span class="material-symbols-outlined">history</span>
-        </button>
-      </div>
-    </section>
-
-    <div class="resize-handle" id="resize-right"></div>
-
-    <section class="panel preview-panel" id="preview-panel">
-      <div class="panel-header">
-        <div class="preview-title">
-          <span>Preview</span>
+        <div class="header-right">
+          <span class="preview-pin-label hidden" id="preview-pin-label"></span>
           <button class="icon-btn hidden" id="btn-pin-preview"
             title="Pin preview to this file">
             <span class="material-symbols-outlined">push_pin</span>
           </button>
-          <span class="preview-pin-label hidden" id="preview-pin-label"></span>
         </div>
+      </div>
+      <div class="workarea-toolbar">
+        <div class="fmt-group hidden" id="editor-toolbar">
+          <button class="fmt-btn" data-action="bold" title="Bold (*…*)">
+            <span class="material-symbols-outlined">format_bold</span>
+          </button>
+          <button class="fmt-btn" data-action="italic" title="Italic (_…_)">
+            <span class="material-symbols-outlined">format_italic</span>
+          </button>
+          <span class="fmt-sep"></span>
+          <button class="fmt-btn" data-action="heading" title="Heading (= )">
+            <span class="material-symbols-outlined">title</span>
+          </button>
+          <button class="fmt-btn" data-action="bullet" title="Bullet list (- )">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+          </button>
+          <button class="fmt-btn" data-action="numbered" title="Numbered list (+ )">
+            <span class="material-symbols-outlined">format_list_numbered</span>
+          </button>
+          <span class="fmt-sep"></span>
+          <button class="fmt-btn" data-action="link" title="Link">
+            <span class="material-symbols-outlined">link</span>
+          </button>
+          <button class="fmt-btn" data-action="image" title="Image">
+            <span class="material-symbols-outlined">image</span>
+          </button>
+          <button class="fmt-btn" data-action="table" title="Table">
+            <span class="material-symbols-outlined">table</span>
+          </button>
+          <span class="fmt-sep"></span>
+          <button class="fmt-btn" data-action="code" title="Inline code (`…`)">
+            <span class="material-symbols-outlined">code</span>
+          </button>
+          <button class="fmt-btn" data-action="codeblock" title="Code block (```…```)">
+            <span class="material-symbols-outlined">code_blocks</span>
+          </button>
+          <button class="fmt-btn" data-action="math" title="Math ($…$)">
+            <span class="material-symbols-outlined">function</span>
+          </button>
+          <span class="fmt-sep"></span>
+          <button class="fmt-btn active" data-action="wrap" title="Word wrap">
+            <span class="material-symbols-outlined">wrap_text</span>
+          </button>
+        </div>
+        <div class="toolbar-spacer"></div>
         <button class="btn-pdf hidden" id="btn-pdf" title="Download PDF">
           <span class="material-symbols-outlined">download</span>
           Generate PDF
@@ -184,10 +157,31 @@
           </button>
         </div>
       </div>
-      <div class="preview-viewport" id="preview-viewport">
-        <div class="preview-page" id="preview-page">
-          <p class="preview-empty">Open a file to see the preview.</p>
-        </div>
+
+      <div class="workarea-split">
+        <section class="panel editor-panel" id="editor-panel">
+          <div class="editor-wrap">
+            <div class="editor" id="editor"></div>
+            <div class="binary-preview hidden" id="binary-preview"></div>
+          </div>
+          <div class="status-bar">
+            <span id="cursor-pos">Ln 1, Col 1</span>
+            <span id="status-bar-modified"></span>
+            <button class="status-btn" id="btn-history" title="File history">
+              <span class="material-symbols-outlined">history</span>
+            </button>
+          </div>
+        </section>
+
+        <div class="resize-handle" id="resize-right"></div>
+
+        <section class="panel preview-panel" id="preview-panel">
+          <div class="preview-viewport" id="preview-viewport">
+            <div class="preview-page" id="preview-page">
+              <p class="preview-empty">Open a file to see the preview.</p>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </main>
@@ -335,6 +329,47 @@
         <select class="form-input" id="template-target-dir" title="Target directory"></select>
       </div>
       <ul class="template-list" id="template-list"></ul>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="settings-dialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <span>Settings</span>
+        <button class="icon-btn" id="btn-settings-close-x" title="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <ul class="settings-list">
+        <li class="settings-row">
+          <div class="settings-row-text">
+            <span class="settings-row-title">Vim mode</span>
+            <span class="settings-row-desc">Use Vim keybindings in the editor.</span>
+          </div>
+          <button class="btn btn-secondary btn-small" id="btn-vim">Off</button>
+        </li>
+        <li class="settings-row settings-row-admin hidden">
+          <div class="settings-row-text">
+            <span class="settings-row-title">Fonts</span>
+            <span class="settings-row-desc">Upload and remove fonts for Typst compilations.</span>
+          </div>
+          <button class="btn btn-secondary btn-small" id="btn-fonts">
+            <span class="material-symbols-outlined">brand_family</span> Manage
+          </button>
+        </li>
+        <li class="settings-row settings-row-admin hidden">
+          <div class="settings-row-text">
+            <span class="settings-row-title">API keys</span>
+            <span class="settings-row-desc">Issue and revoke tokens for the REST API.</span>
+          </div>
+          <button class="btn btn-secondary btn-small" id="btn-api-keys">
+            <span class="material-symbols-outlined">key</span> Manage
+          </button>
+        </li>
+      </ul>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" id="btn-settings-close">Close</button>
+      </div>
     </div>
   </div>
 
