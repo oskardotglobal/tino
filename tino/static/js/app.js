@@ -1,4 +1,5 @@
 import { applyRoleVisibility, loadUser } from './app-session.js'
+import { bindLogoRepoLink, setLogoVersionTooltip } from './app-logo.js'
 import { readRoute, writeRoute } from './router.js'
 import { ApiKeyManager } from './api-key-manager.js'
 import { BucketEvents } from './bucket-events.js'
@@ -13,6 +14,7 @@ import { PreviewManager } from './preview-manager.js'
 import { ProfileModal } from './profile-modal.js'
 import { SearchModal } from './search-modal.js'
 import { SettingsModal } from './settings-modal.js'
+import { SpeakerMode } from './speaker-mode.js'
 import { TemplatePicker } from './template-picker.js'
 import { TinoAPI } from './api.js'
 import { Toast } from './toast.js'
@@ -85,6 +87,7 @@ class TinoApp {
     this.panelResize = new PanelResize()
     this.preview = new PreviewManager(this)
     this.presentation = new PresentationMode(this)
+    this.speaker = new SpeakerMode(this)
     this._initDialogs()
   }
 
@@ -104,40 +107,11 @@ class TinoApp {
     this._bindAll()
     applyRoleVisibility(this)
     this.config = await this.api.config()
-    this._setLogoVersionTooltip()
-    this._bindLogoRepoLink()
+    setLogoVersionTooltip(this)
+    bindLogoRepoLink(this)
     await this.reloadUser()
     await this.fileTree.loadBuckets()
     await this._applyRoute(route, true)
-  }
-
-  /** Show the app version on hover over the header logo. */
-
-  _setLogoVersionTooltip() {
-    if (!this.config.version)
-      return
-
-    // Inline SVG ignores the HTML `title` attribute for tooltips; it needs a
-    // <title> child element instead.
-    const ns = 'http://www.w3.org/2000/svg'
-    const title = document.createElementNS(ns, 'title')
-    title.textContent = `TINO v${this.config.version}`
-    this.els.logo.replaceChildren(title, ...this.els.logo.childNodes)
-  }
-
-  /**
-   * Open the configured source repository (TINO_REPO_URL) in a new tab when
-   * the logo is clicked. Without a configured URL the logo stays inert.
-   */
-
-  _bindLogoRepoLink() {
-    const url = this.config.repoUrl
-    if (!url)
-      return
-    this.els.logo.classList.add('clickable')
-    this.els.logo.addEventListener('click', () => {
-      window.open(url, '_blank', 'noopener')
-    })
   }
 
   _bindAll() {
@@ -149,6 +123,7 @@ class TinoApp {
     this._bindDialogs()
     this.preview.bindZoom()
     this.presentation.bind()
+    this.speaker.bind()
   }
 
   _bindDialogs() {

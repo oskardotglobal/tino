@@ -1,3 +1,4 @@
+import { renderSlide, slideAction } from './slide-view.js'
 import { SINGLE_ITEM } from './constants.js'
 
 /**
@@ -113,22 +114,8 @@ export class PresentationMode {
     const total = this._slides.length
     const last = total - SINGLE_ITEM
     this._index = Math.min(Math.max(index, 0), last)
-    this._slide.innerHTML = this._slides[this._index]
-    PresentationMode._applyAspectRatio(this._slide)
+    renderSlide(this._slide, this._slides[this._index])
     this._counter.textContent = `${this._index + SINGLE_ITEM} / ${total}`
-  }
-
-  /**
-   * Size the slide box to the page's aspect ratio so the white page area
-   * matches the SVG exactly instead of leaking behind the letterboxing.
-   */
-
-  static _applyAspectRatio(slide) {
-    const svg = slide.querySelector('svg')
-    if (!svg)
-      return
-    const { baseVal } = svg.viewBox
-    slide.style.aspectRatio = `${baseVal.width} / ${baseVal.height}`
   }
 
   /**
@@ -154,23 +141,20 @@ export class PresentationMode {
   _onKey(evt) {
     if (!this._active)
       return
-    switch (evt.key) {
-      case ' ':
-      case 'ArrowRight':
-      case 'PageDown':
-        this.next()
-        break
-      case 'ArrowLeft':
-      case 'PageUp':
-        this.prev()
-        break
-      case 'Escape':
-        this.stop()
-        break
-      default:
-        return
-    }
+    const action = slideAction(evt.key)
+    if (!action)
+      return
+    this._run(action)
     evt.preventDefault()
+  }
+
+  _run(action) {
+    if (action === 'next')
+      this.next()
+    else if (action === 'prev')
+      this.prev()
+    else
+      this.stop()
   }
 
   _onMenuClick(evt) {
@@ -178,7 +162,10 @@ export class PresentationMode {
     if (!item)
       return
     this._closeMenu()
-    if (item.dataset.action === 'current')
+    const { action } = item.dataset
+    if (action === 'speaker')
+      this.app.speaker.start()
+    else if (action === 'current')
       this.start(this.app.preview.currentPageIndex())
     else
       this.start(0)

@@ -43,7 +43,7 @@ export class PreviewManager {
    */
 
   currentPageIndex() {
-    const top = this.app.els.previewViewport.getBoundingClientRect().top
+    const { top } = this.app.els.previewViewport.getBoundingClientRect()
     const distances = this.pageElements.map(
       page => Math.abs(page.getBoundingClientRect().top - top),
     )

@@ -168,6 +168,10 @@
               <span class="material-symbols-outlined">play_circle</span>
               Start from the current slide
             </li>
+            <li class="present-item" data-action="speaker">
+              <span class="material-symbols-outlined">co_present</span>
+              Speaker mode
+            </li>
           </ul>
         </div>
         <button class="btn-pdf hidden" id="btn-pdf" title="Download PDF">
@@ -539,6 +543,36 @@
   <div class="presentation hidden" id="presentation">
     <div class="presentation-slide" id="presentation-slide"></div>
     <div class="presentation-counter" id="presentation-counter"></div>
+  </div>
+
+  <div class="speaker hidden" id="speaker">
+    <div class="speaker-stage">
+      <span class="speaker-label">Current slide</span>
+      <div class="speaker-stage-body">
+        <div class="speaker-slide" id="speaker-current"></div>
+      </div>
+      <span class="speaker-progress" id="speaker-progress"></span>
+    </div>
+    <aside class="speaker-side">
+      <span class="speaker-label">Next slide</span>
+      <div class="speaker-slide speaker-slide-next" id="speaker-next"></div>
+      <div class="speaker-clock">
+        <div class="speaker-time" id="speaker-time">00:00:00</div>
+        <div class="speaker-clock-btns">
+          <button class="speaker-btn" id="btn-speaker-pause" title="Pause">
+            <span class="material-symbols-outlined">pause</span>
+          </button>
+          <button class="speaker-btn" id="btn-speaker-lap" title="Lap">
+            <span class="material-symbols-outlined">flag</span>
+          </button>
+          <button class="speaker-btn" id="btn-speaker-reset" title="Reset">
+            <span class="material-symbols-outlined">restart_alt</span>
+          </button>
+        </div>
+        <ol class="speaker-laps" id="speaker-laps"></ol>
+      </div>
+      <span class="speaker-hint">Esc to leave speaker mode</span>
+    </aside>
   </div>
 
   <div class="toast-container" id="toast-container"></div>

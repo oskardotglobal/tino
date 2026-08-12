@@ -1376,6 +1376,154 @@ html, body {
   pointer-events: none;
 }
 
+/* ── Speaker mode ── */
+
+.speaker {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  background: var(--bg-primary);
+  cursor: pointer;
+}
+
+.speaker-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.speaker-side {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.speaker-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.speaker-stage-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speaker-slide {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 2px;
+  box-shadow: var(--shadow);
+}
+
+.speaker-slide svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.speaker-slide-next {
+  height: auto;
+  width: 100%;
+  opacity: 0.85;
+}
+
+.speaker-end {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.speaker-progress {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.speaker-clock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: default;
+}
+
+.speaker-time {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.speaker-clock-btns {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.speaker-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.speaker-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.speaker-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.speaker-laps {
+  max-height: 140px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 0 0 22px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.speaker-lap {
+  padding: 1px 0;
+}
+
+.speaker-hint {
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 /* ── Dialog / Modal ── */
 
 .dialog-overlay {
