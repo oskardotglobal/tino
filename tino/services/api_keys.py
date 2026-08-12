@@ -25,7 +25,7 @@ class ApiKeyService:
         keys:
           - id: key_abc123
             hash: "sha256:..."
-            label: "Claude Desktop MCP"
+            label: "CI pipeline"
             created: "2026-06-04"
             access:
               my-bucket: editor

@@ -34,7 +34,6 @@ class BucketCreate(BaseModel):
     name: str = Field('', max_length=50)
     description: str = ''
     access: list[AccessEntry] = []
-    mcp_instructions: str = ''
 
 
 class BucketUpdate(BaseModel):
@@ -42,7 +41,6 @@ class BucketUpdate(BaseModel):
     name: str | None = Field(None, max_length=50)
     description: str | None = None
     access: list[AccessEntry] | None = None
-    mcp_instructions: str | None = None
 
 
 class BucketInfo(BaseModel):
@@ -51,7 +49,6 @@ class BucketInfo(BaseModel):
     name: str = ''
     description: str
     access: list[AccessEntry]
-    mcp_instructions: str = ''
 
 
 # ── Files ──

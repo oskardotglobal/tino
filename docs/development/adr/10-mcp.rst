@@ -3,6 +3,18 @@
 ADR-10: MCP server
 ==================
 
+.. attention::
+
+  **Superseded — the MCP server has been removed from TINO.**
+
+  This ADR is kept for the historical record only.
+  The ``/mcp`` endpoint, the OAuth resource-server implementation, the
+  ``/.well-known/`` discovery metadata proxy, the ``TINO_MCP_*`` settings, and
+  the per-bucket MCP instructions no longer exist.
+  The ecosystem concerns listed under *Negative* below — in particular the
+  immature CIMD support and the missing audience binding — outweighed the
+  benefit of shipping the integration at this stage.
+
 Context
 -------
 

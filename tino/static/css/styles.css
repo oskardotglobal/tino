@@ -1394,7 +1394,7 @@ html, body {
   border-color: var(--accent);
 }
 
-/* Let the description / MCP-instruction textareas grow vertically. */
+/* Let the description textarea grow vertically. */
 textarea.form-input {
   min-height: 3rem;
   resize: vertical;
@@ -1404,41 +1404,6 @@ textarea.form-input {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
-/* Read-only, server-wide MCP instructions shown collapsed in the bucket form. */
-.mcp-global {
-  margin-bottom: 8px;
-  font-size: 12px;
-}
-
-.mcp-global summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-
-.mcp-global summary:hover {
-  color: var(--text-primary);
-}
-
-.mcp-global-note {
-  margin: 6px 0 4px;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-.mcp-global-text {
-  margin: 0;
-  padding: 8px 10px;
-  border-radius: var(--radius);
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  max-height: 160px;
-  overflow-y: auto;
-}
-
 
 .access-row {
   display: flex;

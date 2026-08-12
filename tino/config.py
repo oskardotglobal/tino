@@ -17,9 +17,6 @@ __all__ = (
     'TINO_DEFAULT_ROLE',
     'TINO_FONT_DIR',
     'TINO_LOG_LEVEL',
-    'TINO_MCP_COMMIT_ENABLED',
-    'TINO_MCP_ENABLED',
-    'TINO_MCP_INSTRUCTIONS',
     'TINO_OIDC_CLIENT_ID',
     'TINO_OIDC_CLIENT_SECRET',
     'TINO_OIDC_DISCOVERY_URL',
@@ -138,25 +135,6 @@ TINO_OIDC_CLIENT_SECRET = environ.get('TINO_OIDC_CLIENT_SECRET')
 TINO_OIDC_GROUPS_CLAIM = environ.get('TINO_OIDC_GROUPS_CLAIM', 'groups')
 
 
-# ----- 🤖 MCP -----
-
-#: When set to ``true``, the :ref:`MCP <MCP server>` server is mounted at ``/mcp``.
-#:
-#: .. warning::
-#:  The MCP server is **experimental** and disabled by default.
-TINO_MCP_ENABLED = environ.get('TINO_MCP_ENABLED', '').lower() in _TRUEISH
-
-#: Optional additional instructions appended to the built-in MCP server instructions.
-#: Use this to provide global context to AI agents connecting via MCP
-#: (e.g. house style, terminology, or organisational policies).
-TINO_MCP_INSTRUCTIONS = environ.get('TINO_MCP_INSTRUCTIONS') or None
-
-#: When set to ``true``, the MCP ``commit`` tool is registered. Disabled by
-#: default, so agents can edit and compile files but never commit — humans
-#: review and commit via the UI.
-TINO_MCP_COMMIT_ENABLED = environ.get('TINO_MCP_COMMIT_ENABLED', '').lower() in _TRUEISH
-
-
 # ----- ⚙️ Application settings -----
 
 #: ⭕ The CI accent colour family used across the UI.
@@ -222,11 +200,6 @@ def sanity_checks():  # pylint: disable=too-complex,too-many-branches
 
         if not TINO_OIDC_GROUPS_CLAIM:
             errors['TINO_OIDC_GROUPS_CLAIM'] = 'Set to the OIDC group claim'
-
-        if TINO_MCP_ENABLED and not TINO_BASE_URL:
-            errors['TINO_BASE_URL'] = (
-                "Set to TINO's public base URL (or disable MCP with TINO_MCP_ENABLED=false)"
-            )
 
     _valid_roles = {'viewer', 'editor', 'committer', 'none'}
     if TINO_DEFAULT_ROLE not in _valid_roles:

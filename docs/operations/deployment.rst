@@ -179,7 +179,7 @@ Reverse proxy
 TINO is typically deployed behind a reverse proxy (e.g. nginx, Traefik, Caddy) that terminates TLS.
 
 Set :attr:`TINO_BASE_URL <tino.config.TINO_BASE_URL>` to the public ``https://`` URL the proxy serves TINO on.
-It is used to build OIDC redirect URLs and, when :ref:`MCP <MCP server>` is enabled, as the resource identifier in the OAuth discovery metadata.
+It is used to build the OIDC redirect URLs.
 
 OIDC
 ~~~~
@@ -212,24 +212,6 @@ Register a new client (application) with your OIDC provider:
 .. seealso::
 
     See :ref:`Configuration` for the full list of environment variables.
-
-MCP
-~~~
-
-The :ref:`MCP server <MCP server>` is disabled by default.
-To enable it, set :attr:`TINO_MCP_ENABLED <tino.config.TINO_MCP_ENABLED>` to ``true``.
-
-MCP authentication happens via **OAuth 2.0**, and the OIDC provider must support CIMD.
-No additional client registration is needed.
-
-.. note::
-
-    On `Keycloak <https://www.keycloak.org/>`_ this requires version `26.6.0 <https://www.keycloak.org/2026/04/keycloak-2660-released>`_ or later, where `Client ID Metadata Document <https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/>`_ support ships as an experimental feature.
-    Check out the `Client Registration <https://www.keycloak.org/securing-apps/mcp-authz-server#_client_registration>`_ docs for more information.
-
-.. seealso::
-
-    Check out the :ref:`MCP authentication <usage/authentication:MCP>` for how the auth flow works, and the :ref:`MCP server <MCP server>` documentation for usage and settings.
 
 Disabling authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~

@@ -63,7 +63,6 @@ class BucketService:
             name=meta.get('name', ''),
             description=meta.get('description', ''),
             access=[AccessEntry(**a) for a in meta.get('access', [])],
-            mcp_instructions=meta.get('mcp_instructions', ''),
         )
 
     def list(self) -> list[BucketInfo]:
@@ -89,11 +88,10 @@ class BucketService:
     def _actor(user: User) -> git.Actor:
         return git.Actor(user.username, user.email)
 
-    def create(  # pylint: disable=too-many-arguments
+    def create(
         self, slug: str, description: str = '',
         access: list[AccessEntry] | None = None, *,
         name: str = '',
-        mcp_instructions: str = '',
         user: User | None = None,
     ) -> BucketInfo:
         '''Create a new bucket: mkdir, git init, write .meta.yml, initial commit.'''
@@ -109,8 +107,6 @@ class BucketService:
             meta['name'] = name
         if access:
             meta['access'] = [a.model_dump() for a in access]
-        if mcp_instructions:
-            meta['mcp_instructions'] = mcp_instructions
         self._write_meta(path, meta)
 
         repo = git.Repo.init(path)
@@ -125,11 +121,10 @@ class BucketService:
         logger.info('Created bucket %s', slug)
         return self._to_info(slug, path)
 
-    def update(  # pylint: disable=too-many-arguments
+    def update(
         self, slug: str, description: str | None = None,
         access: list[AccessEntry] | None = None, *,
         name: str | None = None,
-        mcp_instructions: str | None = None,
         user: User | None = None,
     ) -> BucketInfo | None:
         '''Update a bucket's .meta.yml. Only provided fields are changed.'''
@@ -152,11 +147,6 @@ class BucketService:
                 meta['description'] = description
             if access is not None:
                 meta['access'] = [a.model_dump() for a in access]
-            if mcp_instructions is not None:
-                if mcp_instructions:
-                    meta['mcp_instructions'] = mcp_instructions
-                else:
-                    meta.pop('mcp_instructions', None)
 
             self._write_meta(path, meta)
 

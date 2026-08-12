@@ -52,44 +52,6 @@ These defaults are overridable from your shell or the command line — for examp
         TINO_OIDC_CLIENT_ID=tino \
         TINO_OIDC_CLIENT_SECRET=<secret>
 
-Developing the MCP server
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-MCP OAuth requires a public HTTPS URL.
-``localhost`` is not enough because the MCP client needs to reach TINO's well-known endpoints and the OIDC provider needs to redirect back to a real origin.
-
-The easiest way to get one during development is a `Cloudflare Tunnel <https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/>`_ (``cloudflared``):
-
-.. code-block:: bash
-
-    # In one terminal — start TINO with auth enabled:
-    TINO_AUTH_DISABLED=false \
-    TINO_BASE_URL=https://<tunnel-host> \
-    TINO_MCP_ENABLED=true \
-    TINO_OIDC_DISCOVERY_URL=https://<sso-host>/realms/<realm>/.well-known/openid-configuration \
-    TINO_OIDC_CLIENT_ID=tino \
-    TINO_OIDC_CLIENT_SECRET=<secret> \
-    make server
-
-    # In another terminal — expose localhost via the tunnel:
-    cloudflared tunnel --url http://localhost:8000
-
-.. note::
-
-    ``cloudflared`` prints the temporary public URL (e.g. ``https://random-words.trycloudflare.com``).
-    Use that as ``TINO_BASE_URL``.
-
-.. important::
-
-   The tunnel hostname must be registered as a valid redirect URI in your OIDC provider (e.g. as a ``Valid redirect URIs`` entry in Keycloak).
-   For a persistent hostname, create a `named tunnel <https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-remote-tunnel/>`_ instead of the quick ``--url`` shortcut.
-
-Once the tunnel is up, point an MCP client at it:
-
-.. code-block:: console
-
-    $ claude mcp add --transport http tino https://<tunnel-host>/mcp
-
 Vendored assets
 ~~~~~~~~~~~~~~~
 
@@ -161,7 +123,6 @@ Project layout
     ├── collab.py           Real-time collaboration (Yjs/WebSocket)
     ├── config.py           Environment-based configuration
     ├── dependencies.py     FastAPI dependency injection
-    ├── mcp/                MCP server, OAuth resource server & instructions
     ├── middleware.py        ASGI middleware stack
     ├── models.py           Pydantic request/response schemas
     ├── notifier.py         File-change notifications
