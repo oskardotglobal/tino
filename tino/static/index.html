@@ -150,6 +150,26 @@
           </button>
         </div>
         <div class="toolbar-spacer"></div>
+        <div class="present-group hidden" id="present-group">
+          <button class="btn-present" id="btn-present"
+            title="Start presentation">
+            <span class="material-symbols-outlined">play_arrow</span>
+          </button>
+          <button class="btn-present btn-present-caret" id="btn-present-menu"
+            title="Presentation options" aria-haspopup="true" aria-expanded="false">
+            <span class="material-symbols-outlined">expand_more</span>
+          </button>
+          <ul class="present-menu hidden" id="present-menu">
+            <li class="present-item" data-action="beginning">
+              <span class="material-symbols-outlined">first_page</span>
+              Start from the beginning
+            </li>
+            <li class="present-item" data-action="current">
+              <span class="material-symbols-outlined">play_circle</span>
+              Start from the current slide
+            </li>
+          </ul>
+        </div>
         <button class="btn-pdf hidden" id="btn-pdf" title="Download PDF">
           <span class="material-symbols-outlined">download</span>
           Export
@@ -514,6 +534,11 @@
       </div>
 
     </div>
+  </div>
+
+  <div class="presentation hidden" id="presentation">
+    <div class="presentation-slide" id="presentation-slide"></div>
+    <div class="presentation-counter" id="presentation-counter"></div>
   </div>
 
   <div class="toast-container" id="toast-container"></div>

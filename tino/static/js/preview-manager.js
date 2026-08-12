@@ -18,6 +18,40 @@ export class PreviewManager {
     return this.app.pinnedPreview || this.app.currentFile
   }
 
+  /** The rendered page elements currently in the preview pane. */
+
+  get pageElements() {
+    return [...this.app.els.previewPage.querySelectorAll('.preview-svg-page')]
+  }
+
+  /**
+   * Whether the rendered document is horizontal (landscape), i.e. laid out as
+   * slides. Measured on the first page's SVG viewBox.
+   */
+
+  get isHorizontal() {
+    const svg = this.app.els.previewPage.querySelector('.preview-svg-page svg')
+    if (!svg)
+      return false
+    const { baseVal } = svg.viewBox
+    return baseVal.width > baseVal.height
+  }
+
+  /**
+   * Index of the page the user is currently looking at: the one whose top edge
+   * sits closest to the top of the preview viewport.
+   */
+
+  currentPageIndex() {
+    const top = this.app.els.previewViewport.getBoundingClientRect().top
+    const distances = this.pageElements.map(
+      page => Math.abs(page.getBoundingClientRect().top - top),
+    )
+    if (distances.length === 0)
+      return 0
+    return distances.indexOf(Math.min(...distances))
+  }
+
   /**
    * Compile the preview target (the pinned file when one is pinned, otherwise
    * the current file) and render its SVG pages in the preview pane.
@@ -78,6 +112,7 @@ export class PreviewManager {
   clear() {
     this.app.els.previewPage.innerHTML =
       '<p class="preview-empty">No preview available for this file.</p>'
+    this.app.presentation.syncControls()
   }
 
   /** Compile the current .typ file via the API and render SVG pages. */
@@ -99,6 +134,8 @@ export class PreviewManager {
           `<pre class="preview-error">${escapeHtml(err.message)}</pre>`
       }
     }
+    if (gen === this._renderGen)
+      this.app.presentation.syncControls()
   }
 
   /** Build all SVG pages off-DOM and swap them in with a single reflow. */

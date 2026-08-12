@@ -8,6 +8,7 @@ import { FileTree } from './file-tree.js'
 import { FontManager } from './font-manager.js'
 import { GitManager } from './git-manager.js'
 import { PanelResize } from './panel-resize.js'
+import { PresentationMode } from './presentation.js'
 import { PreviewManager } from './preview-manager.js'
 import { ProfileModal } from './profile-modal.js'
 import { SearchModal } from './search-modal.js'
@@ -65,6 +66,7 @@ class TinoApp {
       gitDialog: document.getElementById('git-dialog'),
       logo: document.getElementById('logo'),
       previewPage: document.getElementById('preview-page'),
+      previewViewport: document.getElementById('preview-viewport'),
       statusBarModified: document.getElementById('status-bar-modified'),
       tabBar: document.getElementById('tab-bar'),
       userLabel: document.getElementById('user-label'),
@@ -82,6 +84,7 @@ class TinoApp {
     this.git = new GitManager(this)
     this.panelResize = new PanelResize()
     this.preview = new PreviewManager(this)
+    this.presentation = new PresentationMode(this)
     this._initDialogs()
   }
 
@@ -145,6 +148,7 @@ class TinoApp {
     this._bindFileTree()
     this._bindDialogs()
     this.preview.bindZoom()
+    this.presentation.bind()
   }
 
   _bindDialogs() {
