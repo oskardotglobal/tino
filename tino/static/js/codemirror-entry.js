@@ -14,7 +14,7 @@ export {
   drawSelection,
   keymap,
   lineNumbers,
-  placeholder,
+  panels,
 } from '@codemirror/view'
 export { Doc } from 'yjs'
 export { WebsocketProvider } from 'y-websocket'
@@ -41,7 +41,6 @@ export {
 } from '@codemirror/language'
 export {
   gotoLine,
-  highlightSelectionMatches,
   searchKeymap,
   selectNextOccurrence,
 } from '@codemirror/search'

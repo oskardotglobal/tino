@@ -57,7 +57,9 @@ class TinoApp {
       cursorPos: document.getElementById('cursor-pos'),
       editor: new CodeMirrorEditor(document.getElementById('editor'), {
         onCursor: () => this.editor.input.updateCursorPos(),
+        statusHost: document.getElementById('keymap-status'),
       }),
+      editorEmpty: document.getElementById('editor-empty'),
       fileSearch: document.getElementById('file-search'),
       fileTree: document.getElementById('file-tree'),
       gitDialog: document.getElementById('git-dialog'),

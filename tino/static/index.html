@@ -159,9 +159,11 @@
           <div class="editor-wrap">
             <div class="editor" id="editor"></div>
             <div class="binary-preview hidden" id="binary-preview"></div>
+            <div class="editor-empty" id="editor-empty">Select a file to start editing…</div>
           </div>
-          <div class="status-bar">
+          <div class="status-bar" id="status-bar">
             <span id="cursor-pos">Ln 1, Col 1</span>
+            <span class="keymap-status" id="keymap-status"></span>
             <span id="status-bar-modified"></span>
             <button class="status-btn" id="btn-history" title="File history">
               <span class="material-symbols-outlined">history</span>
