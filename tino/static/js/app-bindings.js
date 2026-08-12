@@ -104,11 +104,11 @@ const bindGitButtons = app => {
   app.git.history.bind()
 }
 
+/* The saved theme is applied by the inline script in index.html, before the
+   first paint; this only wires the toggle. */
+
 const bindThemeToggle = () => {
   const target = document.documentElement
-  const saved = localStorage.getItem('tino:theme')
-  if (saved)
-    target.setAttribute('data-theme', saved)
   document.getElementById('btn-theme')
     .addEventListener('click', () => {
       const current = target.getAttribute('data-theme')

@@ -10,6 +10,17 @@
   <link rel="stylesheet" href="css/vendor/colours.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="/api/theme.css">
+  <script>
+    /* Apply the saved theme before the first paint. Doing it later (once the
+       modules have loaded) renders the whole app — including the editor and
+       its syntax colours — in the dark theme first and repaints it, which the
+       browser does not always carry into CodeMirror's composited text layer. */
+    try {
+      const theme = localStorage.getItem('tino:theme')
+      if (theme)
+        document.documentElement.setAttribute('data-theme', theme)
+    } catch { /* localStorage unavailable (private mode): keep the default */ }
+  </script>
 </head>
 <body>
   <header class="toolbar">

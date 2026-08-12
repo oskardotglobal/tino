@@ -49,18 +49,6 @@
   --scrollbar-thumb: var(--cd-cold-grey-40);
   --scrollbar-track: transparent;
   --shadow: 0 2px 8px rgb(0 0 0 / 30%);
-
-  /* Syntax tokens: brighter brand steps for the dark editor background. */
-  --syntax-comment: var(--cd-cold-grey-50);
-  --syntax-string: var(--cd-sea-green-60);
-  --syntax-keyword: var(--cd-violet-60);
-  --syntax-function: var(--cd-azure-60);
-  --syntax-variable: var(--cd-blue-60);
-  --syntax-number: var(--cd-orange-70);
-  --syntax-heading: var(--cd-yellow-70);
-  --syntax-symbol: var(--cd-fuchsia-60);
-  --syntax-url: var(--cd-azure-60);
-  --syntax-punctuation: var(--cd-cold-grey-60);
 }
 
 /* Light theme */
@@ -86,18 +74,6 @@
   --scrollbar-thumb: var(--cd-cold-grey-70);
   --scrollbar-track: transparent;
   --shadow: 0 2px 8px rgb(0 0 0 / 8%);
-
-  /* Syntax tokens: darker brand steps for contrast on the light background. */
-  --syntax-comment: var(--cd-cold-grey-50);
-  --syntax-string: var(--cd-sea-green-40);
-  --syntax-keyword: var(--cd-violet-40);
-  --syntax-function: var(--cd-azure-40);
-  --syntax-variable: var(--cd-blue-40);
-  --syntax-number: var(--cd-orange-40);
-  --syntax-heading: var(--cd-yellow-50);
-  --syntax-symbol: var(--cd-fuchsia-40);
-  --syntax-url: var(--cd-azure-40);
-  --syntax-punctuation: var(--cd-cold-grey-40);
 }
 
 html, body {
@@ -920,34 +896,28 @@ html, body {
 
 /* ── Typst syntax tokens ── */
 
+/*
+ * Weight and style are theme-independent; the colours below are not.
+ *
+ * The colours are declared per theme with literal palette steps instead of
+ * going through inherited `--syntax-*` custom properties. CodeMirror renders
+ * the document text into its own composited layer, and a custom property that
+ * changes on the root does not reliably repaint it — the editor kept painting
+ * the dark palette after a switch to the light theme (washed-out grey on
+ * white) until an unrelated repaint, such as a dialog's backdrop-filter,
+ * forced a redraw. Keying the colours on the `data-theme` selector makes the
+ * theme switch a plain style recalculation, which always repaints.
+ */
+
 .cm-typst-comment {
-  color: var(--syntax-comment);
   font-style: italic;
 }
 
-.cm-typst-string {
-  color: var(--syntax-string);
-}
-
 .cm-typst-keyword {
-  color: var(--syntax-keyword);
   font-weight: 500;
 }
 
-.cm-typst-function {
-  color: var(--syntax-function);
-}
-
-.cm-typst-variable {
-  color: var(--syntax-variable);
-}
-
-.cm-typst-number {
-  color: var(--syntax-number);
-}
-
 .cm-typst-heading {
-  color: var(--syntax-heading);
   font-weight: 700;
 }
 
@@ -959,22 +929,37 @@ html, body {
   font-style: italic;
 }
 
-.cm-typst-meta {
-  color: var(--syntax-symbol);
-}
-
-.cm-typst-label {
-  color: var(--syntax-variable);
-}
-
 .cm-typst-link {
-  color: var(--syntax-url);
   text-decoration: underline;
 }
 
-.cm-typst-punct {
-  color: var(--syntax-punctuation);
-}
+/* Dark theme tokens: brighter brand steps for the dark editor background. */
+
+[data-theme="dark"] .cm-typst-comment { color: var(--cd-cold-grey-50); }
+[data-theme="dark"] .cm-typst-string { color: var(--cd-sea-green-60); }
+[data-theme="dark"] .cm-typst-keyword { color: var(--cd-violet-60); }
+[data-theme="dark"] .cm-typst-function { color: var(--cd-azure-60); }
+[data-theme="dark"] .cm-typst-variable { color: var(--cd-blue-60); }
+[data-theme="dark"] .cm-typst-number { color: var(--cd-orange-70); }
+[data-theme="dark"] .cm-typst-heading { color: var(--cd-yellow-70); }
+[data-theme="dark"] .cm-typst-meta { color: var(--cd-fuchsia-60); }
+[data-theme="dark"] .cm-typst-label { color: var(--cd-blue-60); }
+[data-theme="dark"] .cm-typst-link { color: var(--cd-azure-60); }
+[data-theme="dark"] .cm-typst-punct { color: var(--cd-cold-grey-60); }
+
+/* Light theme tokens: darker brand steps for contrast on the light background. */
+
+[data-theme="light"] .cm-typst-comment { color: var(--cd-cold-grey-50); }
+[data-theme="light"] .cm-typst-string { color: var(--cd-sea-green-40); }
+[data-theme="light"] .cm-typst-keyword { color: var(--cd-violet-40); }
+[data-theme="light"] .cm-typst-function { color: var(--cd-azure-40); }
+[data-theme="light"] .cm-typst-variable { color: var(--cd-blue-40); }
+[data-theme="light"] .cm-typst-number { color: var(--cd-orange-40); }
+[data-theme="light"] .cm-typst-heading { color: var(--cd-yellow-50); }
+[data-theme="light"] .cm-typst-meta { color: var(--cd-fuchsia-40); }
+[data-theme="light"] .cm-typst-label { color: var(--cd-blue-40); }
+[data-theme="light"] .cm-typst-link { color: var(--cd-azure-40); }
+[data-theme="light"] .cm-typst-punct { color: var(--cd-cold-grey-40); }
 
 .binary-preview {
   flex: 1;
