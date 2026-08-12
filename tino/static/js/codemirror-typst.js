@@ -19,22 +19,34 @@ const CLOSERS = '}])'
 const MATCH = { '(': ')', '[': ']', '{': '}' }
 const MAX_FOLD_SCAN = 200000
 
+/*
+ * Token classes follow Typst's own editor: keywords red, functions blue,
+ * strings green, numbers magenta, markers (heading, list and math delimiters)
+ * purple, escapes and references teal, raw text grey. The concrete colours are
+ * brand steps picked per theme in styles.css.
+ */
+
 const typstHighlight = HighlightStyle.define([
-  { class: 'cm-typst-comment', tag: tags.lineComment },
-  { class: 'cm-typst-comment', tag: tags.blockComment },
+  { class: 'cm-typst-comment', tag: tags.comment },
   { class: 'cm-typst-string', tag: tags.string },
-  { class: 'cm-typst-string', tag: tags.monospace },
+  { class: 'cm-typst-raw', tag: tags.monospace },
   { class: 'cm-typst-keyword', tag: tags.keyword },
+  { class: 'cm-typst-atom', tag: tags.atom },
+  { class: 'cm-typst-operator', tag: tags.operator },
   { class: 'cm-typst-function', tag: tags.function(tags.variableName) },
   { class: 'cm-typst-variable', tag: tags.variableName },
+  { class: 'cm-typst-property', tag: tags.propertyName },
   { class: 'cm-typst-number', tag: tags.number },
   { class: 'cm-typst-heading', tag: tags.heading },
+  { class: 'cm-typst-marker', tag: tags.processingInstruction },
   { class: 'cm-typst-strong', tag: tags.strong },
   { class: 'cm-typst-emphasis', tag: tags.emphasis },
-  { class: 'cm-typst-meta', tag: tags.meta },
+  { class: 'cm-typst-escape', tag: tags.escape },
   { class: 'cm-typst-label', tag: tags.labelName },
-  { class: 'cm-typst-link', tag: tags.link },
+  { class: 'cm-typst-ref', tag: tags.special(tags.labelName) },
+  { class: 'cm-typst-link', tag: tags.url },
   { class: 'cm-typst-punct', tag: tags.punctuation },
+  { class: 'cm-typst-bracket', tag: tags.bracket },
 ])
 
 const _firstChar = text => (/^\s*(?<ch>\S)/u.exec(text) || { groups: {} }).groups.ch || ''
