@@ -151,7 +151,7 @@ class GitService:
     @staticmethod
     def _deleted_shas(repo, path: str) -> set[str]:
         '''Return the set of commit SHAs where `path` was deleted.'''
-        output = repo.git.log('--format=%H', '--diff-filter=D', '--', path)
+        output = repo.git.log('--no-ext-diff', '--format=%H', '--diff-filter=D', '--', path)
         return set(output.split('\n')) if output else set()
 
     def diff(self, slug: str, path: str | None = None,
@@ -168,12 +168,21 @@ class GitService:
 
     @staticmethod
     def _diff_text(repo, path: str | None, ref: str | None) -> str:
-        '''Compute the unified-diff text for either the working tree or a commit.'''
+        '''Compute the unified-diff text for either the working tree or a commit.
+
+        ``--no-ext-diff`` is required: a server whose git configuration sets
+        ``diff.external`` (difftastic and friends) would otherwise emit that
+        tool's own format, which :meth:`_parse_diff` cannot read — the UI would
+        show every file as unchanged.
+        '''
         if ref is None:
-            return repo.git.diff(path) if path else repo.git.diff()
+            args = ['--no-ext-diff']
+            if path:
+                args.extend(['--', path])
+            return repo.git.diff(*args)
         commit = repo.commit(ref)
         base = f'{ref}^' if commit.parents else _EMPTY_TREE_SHA
-        args = [base, ref]
+        args = ['--no-ext-diff', base, ref]
         if path:
             args.extend(['--', path])
         return repo.git.diff(*args)
