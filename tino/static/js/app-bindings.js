@@ -1,5 +1,5 @@
 /**
- * Toolbar, tab bar, theme toggle, and panel resize event bindings.
+ * Toolbar, tab bar, theme toggle, explorer toggle, and panel resize bindings.
  * Extracted from TinoApp to keep app.js within the line limit.
  */
 
@@ -10,19 +10,18 @@ const bindBucketSelect = app => {
   )
 }
 
-const bindFileButtons = app => {
-  document.getElementById('btn-save')
-    .addEventListener('click', () => {
-      app.editor.saveCurrentFile()
-    })
-  document.getElementById('btn-fonts')
-    .addEventListener('click', () => {
-      app.fontManager.open()
-    })
-  document.getElementById('btn-api-keys')
-    .addEventListener('click', () => {
-      app.apiKeyManager.open()
-    })
+/*
+ * Files are saved automatically, so there is no manual save action left. The
+ * browser's own Ctrl/Cmd-S ("save page as") would be confusing here, so it is
+ * swallowed globally — CodeMirror does the same for its own focus.
+ */
+
+const bindSaveSuppression = () => {
+  window.addEventListener('keydown', evt => {
+    if ((evt.ctrlKey || evt.metaKey) && !evt.shiftKey
+      && evt.key.toLowerCase() === 's')
+      evt.preventDefault()
+  })
 }
 
 const bindSearch = app => {
@@ -100,17 +99,25 @@ const bindThemeToggle = () => {
     })
 }
 
-const bindVimToggle = app => {
-  const btn = document.getElementById('btn-vim')
-  const enabled = localStorage.getItem('tino:vim') === 'on'
-  app.els.editor.setVim(enabled)
-  btn.classList.toggle('active', enabled)
-  btn.addEventListener('click', () => {
-    const next = !btn.classList.contains('active')
-    app.els.editor.setVim(next)
-    btn.classList.toggle('active', next)
-    localStorage.setItem('tino:vim', next ? 'on' : 'off')
-  })
+const EXPLORER_KEY = 'tino:explorer'
+
+const setExplorerVisible = visible => {
+  document.getElementById('file-explorer').classList.toggle('hidden', !visible)
+  document.getElementById('resize-left').classList.toggle('hidden', !visible)
+  document.getElementById('btn-toggle-explorer')
+    .querySelector('.material-symbols-outlined')
+    .textContent = visible ? 'left_panel_close' : 'left_panel_open'
+}
+
+const bindExplorerToggle = () => {
+  let visible = localStorage.getItem(EXPLORER_KEY) !== 'off'
+  setExplorerVisible(visible)
+  document.getElementById('btn-toggle-explorer')
+    .addEventListener('click', () => {
+      visible = !visible
+      setExplorerVisible(visible)
+      localStorage.setItem(EXPLORER_KEY, visible ? 'on' : 'off')
+    })
 }
 
 const bindTabBar = app => {
@@ -148,11 +155,11 @@ const bindPanelResize = app => {
 export const bindToolbar = app => {
   bindBucketSelect(app)
   bindSearch(app)
-  bindFileButtons(app)
+  bindSaveSuppression()
   bindDownloadButton(app)
   bindGitButtons(app)
   bindThemeToggle()
-  bindVimToggle(app)
+  bindExplorerToggle()
   bindTabBar(app)
   bindLogout()
   bindPanelResize(app)

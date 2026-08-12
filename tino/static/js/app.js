@@ -9,6 +9,7 @@ import { GitManager } from './git-manager.js'
 import { PanelResize } from './panel-resize.js'
 import { PreviewManager } from './preview-manager.js'
 import { SearchModal } from './search-modal.js'
+import { SettingsModal } from './settings-modal.js'
 import { TemplatePicker } from './template-picker.js'
 import { TinoAPI } from './api.js'
 import { Toast } from './toast.js'
@@ -54,7 +55,6 @@ class TinoApp {
       cursorPos: document.getElementById('cursor-pos'),
       editor: new CodeMirrorEditor(document.getElementById('editor'), {
         onCursor: () => this.editor.input.updateCursorPos(),
-        onSave: () => this.editor.saveCurrentFile(),
       }),
       fileSearch: document.getElementById('file-search'),
       fileTree: document.getElementById('file-tree'),
@@ -85,6 +85,7 @@ class TinoApp {
     this.apiKeyManager = new ApiKeyManager(this)
     this.templatePicker = new TemplatePicker(this)
     this.searchModal = new SearchModal(this)
+    this.settingsModal = new SettingsModal(this)
   }
 
   /** Initialize the app: bind events and load buckets. */
@@ -120,11 +121,16 @@ class TinoApp {
     this._bindWindowEvents()
     this.editor.bindEditor()
     this._bindFileTree()
+    this._bindDialogs()
+    this.preview.bindZoom()
+  }
+
+  _bindDialogs() {
     this.fontManager.bind()
     this.apiKeyManager.bind()
     this.templatePicker.bind()
     this.searchModal.bind()
-    this.preview.bindZoom()
+    this.settingsModal.bind()
   }
 
   _bindFileTree() {
@@ -156,16 +162,13 @@ class TinoApp {
       this.username = user.username
       this.els.userLabel.textContent = user.username
       this.isAdmin = user.is_admin
-      document.getElementById('btn-fonts')
-        .classList.toggle('hidden', !this.isAdmin)
-      document.getElementById('btn-api-keys')
-        .classList.toggle('hidden', !this.isAdmin)
     }
     catch {
       this.username = 'anonymous'
       this.els.userLabel.textContent = 'anonymous'
       this.isAdmin = false
     }
+    this.settingsModal.applyAdminVisibility(this.isAdmin)
   }
 
   /**
@@ -261,7 +264,6 @@ class TinoApp {
       'btn-download': canView,
       'btn-history': canView,
       'btn-history-restore': canEdit,
-      'btn-save': canEdit,
       'tree-new': canEdit,
     }))
       document.getElementById(id).classList.toggle('hidden', !visible)

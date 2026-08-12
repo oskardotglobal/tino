@@ -250,6 +250,27 @@ html, body {
   overflow: hidden;
 }
 
+/*
+ * The work area spans the editor *and* the preview so that the tab bar and the
+ * formatting toolbar run the full width of both panels; only the area below
+ * them is split into editor / preview.
+ */
+
+.workarea {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.workarea-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ── Panels ── */
 
 .panel {
@@ -301,6 +322,14 @@ html, body {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-left: 8px;
 }
 
 /* ── File Explorer ── */
@@ -552,6 +581,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: 1;
   min-width: 0;
   height: 100%;
   overflow: auto hidden;
@@ -618,16 +648,31 @@ html, body {
   color: var(--accent);
 }
 
-/* ── Editor Toolbar ── */
+/* ── Work Area Toolbar ── */
 
-.editor-toolbar {
+.workarea-toolbar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   padding: 4px 12px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+/* Formatting actions; hidden on binary/read-only files, unlike the bar itself. */
+.fmt-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: auto hidden;
+  scrollbar-width: none;
+}
+
+.toolbar-spacer {
+  flex: 1;
+  min-width: 0;
 }
 
 .fmt-btn {
@@ -1042,13 +1087,6 @@ html, body {
   color: var(--text-muted);
 }
 
-.preview-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
 .preview-pin-label {
   max-width: 180px;
   overflow: hidden;
@@ -1358,6 +1396,58 @@ html, body {
 
 .hidden {
   display: none !important;
+}
+
+/* ── Settings dialog ── */
+
+.settings-list {
+  list-style: none;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-row-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-row-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.settings-row .btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Keep the toggle from resizing as its label flips between On and Off. */
+#btn-vim {
+  min-width: 56px;
+  justify-content: center;
 }
 
 .bucket-form {

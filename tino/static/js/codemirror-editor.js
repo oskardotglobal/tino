@@ -45,14 +45,12 @@ export class CodeMirrorEditor {
   /**
    * @param {HTMLElement} parent - Host element to mount CM into.
    * @param {object} [opts]
-   * @param {Function} [opts.onSave] - Called on Mod-s.
    * @param {Function} [opts.onCursor] - Called when the selection changes.
    * @param {Function} [opts.onChange] - Called on user (non-programmatic) edits.
    */
 
   constructor(parent, opts = {}) {
     this._parent = parent
-    this._onSave = opts.onSave || _noop
     this._onCursor = opts.onCursor || _noop
     this._onChange = opts.onChange || _noop
     this._editable = new Compartment()
@@ -130,7 +128,7 @@ export class CodeMirrorEditor {
         this._collab.of([]),
         typst(),
         keymap.of([
-          this._saveBinding(),
+          CodeMirrorEditor._saveBinding(),
           CodeMirrorEditor._gotoLineBinding(),
           CodeMirrorEditor._selectNextBinding(),
           ...typstKeymap,
@@ -146,15 +144,14 @@ export class CodeMirrorEditor {
     })
   }
 
-  _saveBinding() {
-    return {
-      key: 'Mod-s',
-      preventDefault: true,
-      run: () => {
-        this._onSave()
-        return true
-      },
-    }
+  /*
+   * Files save themselves after a short idle delay, so Mod-s has nothing to do.
+   * It is still bound (and reported as handled) purely to swallow the browser's
+   * "save page as" dialog, which would otherwise fire inside the editor.
+   */
+
+  static _saveBinding() {
+    return { key: 'Mod-s', preventDefault: true, run: () => true }
   }
 
   static _gotoLineBinding() {

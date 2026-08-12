@@ -67,7 +67,7 @@ server:
 	TINO_AUTH_DISABLED='$(TINO_AUTH_DISABLED)' \
 	TINO_BASE_URL='$(TINO_BASE_URL)' \
 	TINO_SECRET_KEY='$(TINO_SECRET_KEY)' \
-	uvicorn tino:create_app --factory --port 8000 --reload
+	uvicorn tino:create_app --factory --port 8000 --host 0.0.0.0 --reload
 
 #
 # Test

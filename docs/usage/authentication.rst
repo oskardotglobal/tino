@@ -31,7 +31,7 @@ For these clients TINO issues **API keys**: static bearer tokens that grant scop
 Creating a key
 ~~~~~~~~~~~~~~
 
-Administrators manage keys from the **API Keys** button in the toolbar.
+Administrators manage keys from the **settings** icon in the toolbar, via **Manage** next to **API keys**.
 
 Click **New Key**, give it a descriptive label, and add one row per bucket and :ref:`role <usage/buckets:Access control>` the key may access.
 

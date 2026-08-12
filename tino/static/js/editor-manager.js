@@ -1,4 +1,4 @@
-import { INDEX_NOT_FOUND, SINGLE_ITEM } from './constants.js'
+import { INDEX_NOT_FOUND, SAVE_DEBOUNCE_MS, SINGLE_ITEM } from './constants.js'
 import { loadSavedTabs, persistTabs } from './tab-store.js'
 import { BinaryPreview } from './editor-binary.js'
 import { EditorCollab } from './editor-collab.js'
@@ -261,11 +261,10 @@ export class EditorManager {
   }
 
   debounceSave() {
-    const delay = this.app.config && this.app.config.saveDebounceMs
-    if (!delay)
-      return
+    const cfg = this.app.config && this.app.config.saveDebounceMs
     clearTimeout(this._saveTimer)
-    this._saveTimer = setTimeout(() => this.saveCurrentFile(), delay)
+    this._saveTimer =
+      setTimeout(() => this.saveCurrentFile(), cfg || SAVE_DEBOUNCE_MS)
   }
 
   /** Reset editor state when switching buckets. */
