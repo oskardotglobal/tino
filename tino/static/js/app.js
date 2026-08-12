@@ -1,3 +1,4 @@
+import { applyRoleVisibility, loadUser } from './app-session.js'
 import { readRoute, writeRoute } from './router.js'
 import { ApiKeyManager } from './api-key-manager.js'
 import { BucketEvents } from './bucket-events.js'
@@ -8,6 +9,7 @@ import { FontManager } from './font-manager.js'
 import { GitManager } from './git-manager.js'
 import { PanelResize } from './panel-resize.js'
 import { PreviewManager } from './preview-manager.js'
+import { ProfileModal } from './profile-modal.js'
 import { SearchModal } from './search-modal.js'
 import { SettingsModal } from './settings-modal.js'
 import { TemplatePicker } from './template-picker.js'
@@ -45,11 +47,11 @@ class TinoApp {
       bucketDialogTitle: document.getElementById('bucket-dialog-title'),
       bucketFormDesc: document.getElementById('bucket-form-desc'),
       bucketFormName: document.getElementById('bucket-form-name'),
+      bucketFormRemote: document.getElementById('bucket-form-remote'),
       bucketFormSlug: document.getElementById('bucket-form-slug'),
       bucketLabel: document.getElementById('bucket-label'),
       bucketPicker: document.getElementById('bucket-picker'),
       bucketPickerList: document.getElementById('bucket-picker-list'),
-      commitDialog: document.getElementById('commit-dialog'),
       commitFiles: document.getElementById('commit-files'),
       commitMessage: document.getElementById('commit-message'),
       cursorPos: document.getElementById('cursor-pos'),
@@ -58,6 +60,7 @@ class TinoApp {
       }),
       fileSearch: document.getElementById('file-search'),
       fileTree: document.getElementById('file-tree'),
+      gitDialog: document.getElementById('git-dialog'),
       logo: document.getElementById('logo'),
       previewPage: document.getElementById('preview-page'),
       statusBarModified: document.getElementById('status-bar-modified'),
@@ -86,6 +89,7 @@ class TinoApp {
     this.templatePicker = new TemplatePicker(this)
     this.searchModal = new SearchModal(this)
     this.settingsModal = new SettingsModal(this)
+    this.profileModal = new ProfileModal(this)
   }
 
   /** Initialize the app: bind events and load buckets. */
@@ -93,10 +97,10 @@ class TinoApp {
   async init() {
     const route = readRoute()
     this._bindAll()
-    this._applyRoleVisibility()
+    applyRoleVisibility(this)
     this.config = await this.api.config()
     this._setLogoVersionTooltip()
-    await this._loadUser()
+    await this.reloadUser()
     await this.fileTree.loadBuckets()
     await this._applyRoute(route, true)
   }
@@ -131,6 +135,7 @@ class TinoApp {
     this.templatePicker.bind()
     this.searchModal.bind()
     this.settingsModal.bind()
+    this.profileModal.bind()
   }
 
   _bindFileTree() {
@@ -156,19 +161,10 @@ class TinoApp {
     })
   }
 
-  async _loadUser() {
-    try {
-      const user = await this.api.me()
-      this.username = user.username
-      this.els.userLabel.textContent = user.username
-      this.isAdmin = user.is_admin
-    }
-    catch {
-      this.username = 'anonymous'
-      this.els.userLabel.textContent = 'anonymous'
-      this.isAdmin = false
-    }
-    this.settingsModal.applyAdminVisibility(this.isAdmin)
+  /** Reload the current user and refresh their toolbar chip. */
+
+  reloadUser() {
+    return loadUser(this)
   }
 
   /**
@@ -182,7 +178,7 @@ class TinoApp {
     this.editor.saveTabs()
     Object.assign(this, { bucket: slug, bucketRole: role || null })
     this.editor.resetState()
-    this._applyRoleVisibility()
+    applyRoleVisibility(this)
     this.bucketEvents.connect(slug)
     writeRoute(slug, null)
     await this.git.loadStatus()
@@ -210,7 +206,30 @@ class TinoApp {
   /** Toolbar label for the active bucket, or a placeholder when none selected. */
 
   currentBucketLabel() {
-    return this.bucket ? this.bucketDisplayName(this.bucket) : 'Select bucket...'
+    return this.bucket ? this.bucketDisplayName(this.bucket) : 'Select project...'
+  }
+
+  /** Remote URL configured for the active bucket, or an empty string. */
+
+  currentBucketRemote() {
+    const list = this.fileTree._buckets || []
+    const bkt = list.find(item => item.slug === this.bucket)
+    return (bkt && bkt.remote) || ''
+  }
+
+  /**
+   * Refresh the workspace after a pull replaced files on disk.
+   * @param {string[]} changed - Paths updated by the pull.
+   */
+
+  async reloadAfterPull(changed) {
+    changed.forEach(path => {
+      delete this.fileBuffers[path]
+      this.dirty.delete(path)
+    })
+    await this._onFilesChanged()
+    if (this.currentFile && changed.includes(this.currentFile))
+      await this.editor.openFile(this.currentFile)
   }
 
   /** Return to the no-bucket state, e.g. after deleting the active bucket. */
@@ -221,7 +240,7 @@ class TinoApp {
     this.bucketRole = null
     this.gitStatuses = {}
     this.editor.resetState()
-    this._applyRoleVisibility()
+    applyRoleVisibility(this)
     this.fileTree.clear()
     this.preview.update()
     writeRoute(null, null)
@@ -249,24 +268,6 @@ class TinoApp {
     await this.git.loadStatus()
     await this.fileTree.loadFiles()
     this.editor.reconcileTabs(this.fileTree.filePaths)
-  }
-
-  /** Show or hide editor actions based on the user's role in the current bucket. */
-
-  _applyRoleVisibility() {
-    const canView = Boolean(this.bucketRole)
-    const canEdit =
-      this.bucketRole === 'editor' || this.bucketRole === 'committer'
-    const canCommit = this.bucketRole === 'committer'
-    for (const [id, visible] of Object.entries({
-      'btn-bucket-history': canView,
-      'btn-commit': canCommit,
-      'btn-download': canView,
-      'btn-history': canView,
-      'btn-history-restore': canEdit,
-      'tree-new': canEdit,
-    }))
-      document.getElementById(id).classList.toggle('hidden', !visible)
   }
 
 }

@@ -19,22 +19,18 @@
         <span class="material-symbols-outlined">left_panel_close</span>
       </button>
       <button class="bucket-btn" id="bucket-btn">
-        <span class="material-symbols-outlined">database</span>
-        <span id="bucket-label">Select bucket...</span>
+        <span class="material-symbols-outlined">folder</span>
+        <span id="bucket-label">Select project...</span>
       </button>
       <button class="toolbar-btn" id="btn-search" title="Search (Ctrl+Shift+F)">
         <span class="material-symbols-outlined">search</span>
         Search
       </button>
-      <button class="toolbar-btn" id="btn-commit" title="Commit changes">
+      <button class="toolbar-btn" id="btn-git" title="Commit, history, push and pull">
         <span class="material-symbols-outlined">commit</span>
-        Commit
+        Git
       </button>
-      <button class="toolbar-btn" id="btn-bucket-history" title="Bucket history">
-        <span class="material-symbols-outlined">history</span>
-        History
-      </button>
-      <button class="toolbar-btn hidden" id="btn-download" title="Download bucket as ZIP">
+      <button class="toolbar-btn hidden" id="btn-download" title="Download project as ZIP">
         <span class="material-symbols-outlined">download</span>
         Download
       </button>
@@ -46,10 +42,10 @@
         <span class="material-symbols-outlined icon-moon">dark_mode</span>
       </button>
       <span class="toolbar-sep"></span>
-      <span class="toolbar-user">
+      <button class="toolbar-user" id="btn-profile" title="Edit your profile">
         <span class="material-symbols-outlined">person</span>
         <span id="user-label">...</span>
-      </span>
+      </button>
       <button class="toolbar-btn" id="btn-settings" title="Settings">
         <span class="material-symbols-outlined">settings</span>
       </button>
@@ -189,7 +185,7 @@
   <div class="dialog-overlay" id="bucket-picker">
     <div class="dialog dialog-wide">
       <div class="dialog-header" id="bucket-dialog-title">
-        <span>Select Bucket</span>
+        <span>Select Project</span>
         <button class="icon-btn" id="btn-picker-close-x" title="Close">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -199,20 +195,23 @@
         <ul class="bucket-list" id="bucket-picker-list"></ul>
         <div class="dialog-actions">
           <button class="btn btn-secondary" id="btn-picker-close">Close</button>
-          <button class="btn btn-primary" id="btn-bucket-new">New Bucket</button>
+          <button class="btn btn-primary" id="btn-bucket-new">New Project</button>
         </div>
       </div>
 
       <div id="bucket-view-form" class="dialog-view hidden">
         <div class="bucket-form">
           <label class="form-label">Slug</label>
-          <input class="form-input" id="bucket-form-slug" type="text" placeholder="my-bucket" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="50">
+          <input class="form-input" id="bucket-form-slug" type="text" placeholder="my-project" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="50">
 
           <label class="form-label">Name</label>
           <input class="form-input" id="bucket-form-name" type="text" placeholder="Optional display name (defaults to the slug)..." maxlength="50">
 
           <label class="form-label">Description</label>
           <textarea class="form-input" id="bucket-form-desc" rows="3" placeholder="Optional description..."></textarea>
+
+          <label class="form-label">Remote URL</label>
+          <input class="form-input" id="bucket-form-remote" type="text" placeholder="Optional git remote for push and pull, e.g. git@github.com:acme/docs.git">
 
           <label class="form-label">Access Control</label>
           <div id="bucket-access-list"></div>
@@ -240,8 +239,8 @@
       <div class="search-bar">
         <input class="form-input search-input" id="search-input" type="text" placeholder="Search file names and content…">
         <div class="search-scope">
-          <button class="search-scope-btn active" id="search-scope-bucket" data-scope="bucket">This bucket</button>
-          <button class="search-scope-btn" id="search-scope-all" data-scope="all">All buckets</button>
+          <button class="search-scope-btn active" id="search-scope-bucket" data-scope="bucket">This project</button>
+          <button class="search-scope-btn" id="search-scope-all" data-scope="all">All projects</button>
         </div>
       </div>
       <ul class="search-results" id="search-results">
@@ -250,57 +249,72 @@
     </div>
   </div>
 
-  <div class="dialog-overlay" id="commit-dialog">
-    <div class="dialog dialog-commit">
-      <div class="dialog-header">Commit Changes</div>
-      <div class="commit-layout">
-        <div class="commit-side">
-          <div class="commit-select-actions">
-            <button class="commit-select-btn" id="btn-commit-none">Select none</button>
-            <button class="commit-select-btn" id="btn-commit-all">Select all</button>
-          </div>
-          <ul class="commit-file-list" id="commit-files"></ul>
-        </div>
-        <div class="commit-diff-pane" id="commit-diff">
-          <p class="preview-empty">Select a file to view its diff.</p>
-        </div>
-      </div>
-      <textarea class="commit-message" id="commit-message" placeholder="Commit message..." rows="3"></textarea>
-      <div class="dialog-actions">
-        <button class="btn btn-secondary" id="btn-commit-cancel">Cancel</button>
-        <button class="btn btn-primary" id="btn-commit-submit">Commit</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="dialog-overlay" id="history-dialog">
-    <div class="dialog dialog-history">
+  <div class="dialog-overlay" id="git-dialog">
+    <div class="dialog dialog-git">
       <div class="dialog-header">
-        <span id="history-title">History</span>
-        <button class="icon-btn" id="btn-history-close" title="Close">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div class="history-search">
-        <input class="form-input" id="history-search" type="text" placeholder="Search commits...">
-      </div>
-      <div class="history-layout">
-        <ul class="history-list" id="history-list"></ul>
-        <div class="history-right">
-          <ul class="history-files" id="history-files"></ul>
-          <div class="preview-toolbar hidden" id="history-preview-toolbar">
-            <button class="preview-toggle" data-mode="content" id="btn-history-mode-content">Content</button>
-            <button class="preview-toggle" data-mode="diff" id="btn-history-mode-diff">Diff</button>
-          </div>
-          <div class="history-preview" id="history-preview">
-            <p class="preview-empty">Select a commit to browse files.</p>
-          </div>
+        <span>Git</span>
+        <div class="git-remote-actions">
+          <button class="btn btn-secondary btn-small" id="btn-git-pull">
+            <span class="material-symbols-outlined">download</span> Pull
+          </button>
+          <button class="btn btn-secondary btn-small" id="btn-git-push">
+            <span class="material-symbols-outlined">upload</span> Push
+          </button>
+          <button class="icon-btn" id="btn-git-close-x" title="Close">
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
       </div>
-      <div class="dialog-actions">
-        <button class="btn btn-secondary" id="btn-history-cancel">Close</button>
-        <button class="btn btn-primary" id="btn-history-restore" disabled>Restore this file</button>
+
+      <div class="git-tabs">
+        <button class="git-tab active" data-tab="changes" id="btn-git-tab-changes">Changes</button>
+        <button class="git-tab" data-tab="history" id="btn-git-tab-history">History</button>
       </div>
+
+      <div id="git-view-changes" class="dialog-view">
+        <div class="commit-layout">
+          <div class="commit-side">
+            <div class="commit-select-actions">
+              <button class="commit-select-btn" id="btn-commit-none">Select none</button>
+              <button class="commit-select-btn" id="btn-commit-all">Select all</button>
+            </div>
+            <ul class="commit-file-list" id="commit-files"></ul>
+          </div>
+          <div class="commit-diff-pane" id="commit-diff">
+            <p class="preview-empty">Select a file to view its diff.</p>
+          </div>
+        </div>
+        <textarea class="commit-message" id="commit-message" placeholder="Commit message..." rows="3"></textarea>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" id="btn-commit-cancel">Close</button>
+          <button class="btn btn-primary" id="btn-commit-submit">Commit</button>
+        </div>
+      </div>
+
+      <div id="git-view-history" class="dialog-view hidden">
+        <div class="history-search">
+          <span class="history-scope" id="history-title"></span>
+          <input class="form-input" id="history-search" type="text" placeholder="Search commits...">
+        </div>
+        <div class="history-layout">
+          <ul class="history-list" id="history-list"></ul>
+          <div class="history-right">
+            <ul class="history-files" id="history-files"></ul>
+            <div class="preview-toolbar hidden" id="history-preview-toolbar">
+              <button class="preview-toggle" data-mode="content" id="btn-history-mode-content">Content</button>
+              <button class="preview-toggle" data-mode="diff" id="btn-history-mode-diff">Diff</button>
+            </div>
+            <div class="history-preview" id="history-preview">
+              <p class="preview-empty">Select a commit to browse files.</p>
+            </div>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" id="btn-history-cancel">Close</button>
+          <button class="btn btn-primary" id="btn-history-restore" disabled>Restore this file</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -335,10 +349,30 @@
       <ul class="settings-list">
         <li class="settings-row">
           <div class="settings-row-text">
-            <span class="settings-row-title">Vim mode</span>
-            <span class="settings-row-desc">Use Vim keybindings in the editor.</span>
+            <span class="settings-row-title">Keybindings</span>
+            <span class="settings-row-desc">Modal keybindings to use in the editor.</span>
           </div>
-          <button class="btn btn-secondary btn-small" id="btn-vim">Off</button>
+          <select class="form-input settings-input" id="setting-keymap">
+            <option value="default">Default</option>
+            <option value="vim">Vim</option>
+            <option value="helix">Helix</option>
+          </select>
+        </li>
+        <li class="settings-row">
+          <div class="settings-row-text">
+            <span class="settings-row-title">Editor font</span>
+            <span class="settings-row-desc">CSS font family used in the editor.</span>
+          </div>
+          <input class="form-input settings-input" id="setting-font-family" type="text"
+            placeholder="Roboto Mono, monospace">
+        </li>
+        <li class="settings-row">
+          <div class="settings-row-text">
+            <span class="settings-row-title">Font size</span>
+            <span class="settings-row-desc">Editor font size in pixels.</span>
+          </div>
+          <input class="form-input settings-input settings-input-narrow" id="setting-font-size"
+            type="number" min="8" max="32" step="1" placeholder="14">
         </li>
         <li class="settings-row settings-row-admin hidden">
           <div class="settings-row-text">
@@ -361,6 +395,33 @@
       </ul>
       <div class="dialog-actions">
         <button class="btn btn-secondary" id="btn-settings-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="profile-dialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <span>Profile</span>
+        <button class="icon-btn" id="btn-profile-close-x" title="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="bucket-form">
+        <p class="dialog-hint">
+          Optional identity used to author your commits. Leave empty to commit
+          with your login name and address.
+        </p>
+
+        <label class="form-label" for="profile-name">Display name</label>
+        <input class="form-input" id="profile-name" type="text" placeholder="Jane Doe" maxlength="100">
+
+        <label class="form-label" for="profile-email">Email</label>
+        <input class="form-input" id="profile-email" type="email" placeholder="jane@example.com" maxlength="100">
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" id="btn-profile-cancel">Cancel</button>
+        <button class="btn btn-primary" id="btn-profile-save">Save</button>
       </div>
     </div>
   </div>
@@ -405,10 +466,10 @@
           <label class="form-label">Label</label>
           <input class="form-input" id="apikey-form-label" type="text" placeholder="e.g. CI pipeline">
 
-          <label class="form-label">Bucket Access</label>
+          <label class="form-label">Project Access</label>
           <div id="apikey-access-list"></div>
           <button class="btn btn-secondary btn-small" id="btn-apikey-access-add">
-            <span class="material-symbols-outlined">add</span> Add bucket
+            <span class="material-symbols-outlined">add</span> Add project
           </button>
         </div>
         <div class="dialog-actions">

@@ -7,8 +7,9 @@ import { GitHistory } from './git-history.js'
 import { renderDiffEntries } from './diff-render.js'
 
 /**
- * Manages git operations: status, commit dialog, and history.
- * Delegates history browsing to GitHistory.
+ * Manages the Git dialog: the Changes tab (status, diffs, commit), the remote
+ * actions (push and pull), and the tab switching. History browsing lives in
+ * GitHistory, which renders into this dialog's second tab.
  */
 
 export class GitManager {
@@ -18,6 +19,7 @@ export class GitManager {
   constructor(app) {
     this.app = app
     this.history = new GitHistory(app)
+    this._tab = 'changes'
   }
 
   /** Fetch git status for all files. */
@@ -32,34 +34,88 @@ export class GitManager {
     })
   }
 
-  /** Open the commit dialog with changed file checkboxes. */
+  // ── Dialog and tabs ──
+
+  /*
+   * Open the Git dialog. Only committers get the Changes tab, so everyone else
+   * lands on the history, which is all their role allows them to do here.
+   */
 
   async openDialog() {
     if (!this.app.bucket)
       return
+    if (this.app.bucketRole !== 'committer') {
+      await this.openHistory()
+      return
+    }
+    this._showDialog('changes')
+    await this.loadChanges()
+  }
+
+  /**
+   * Open the Git dialog on the History tab.
+   * @param {string} [filePath] - Restrict the history to a single file.
+   */
+
+  async openHistory(filePath) {
+    if (!this.app.bucket)
+      return
+    this._showDialog('history')
+    await this.history.load(filePath)
+  }
+
+  _showDialog(tab) {
+    this._applyRemoteState()
+    this.selectTab(tab)
+    document.getElementById('git-dialog').classList.add('visible')
+  }
+
+  /** Switch between the Changes and History tabs. */
+
+  selectTab(tab) {
+    this._tab = tab
+    document.querySelectorAll('.git-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab)
+    })
+    document.getElementById('git-view-changes')
+      .classList.toggle('hidden', tab !== 'changes')
+    document.getElementById('git-view-history')
+      .classList.toggle('hidden', tab !== 'history')
+  }
+
+  /** Hide the Git dialog overlay. */
+
+  closeDialog() {
+    document.getElementById('git-dialog').classList.remove('visible')
+    this.history.reset()
+  }
+
+  // ── Changes tab ──
+
+  /** Load the working tree status into the Changes tab. */
+
+  async loadChanges() {
     await this.loadStatus()
     const paths = Object.keys(this.app.gitStatuses)
     if (paths.length === 0)
-      this._showEmptyDialog()
+      this._showEmptyChanges()
     else
-      this._showFileDialog(paths)
+      this._showFileList(paths)
   }
 
-  _showFileDialog(paths) {
+  _showFileList(paths) {
     this.app.els.commitFiles.innerHTML = ''
     this._renderFileList(this.app.els.commitFiles, paths)
     GitManager._resetDiffPane()
     this.app.els.commitMessage.value = ''
-    this.app.els.commitDialog.classList.add('visible')
     this.app.els.commitMessage.focus()
   }
 
-  _showEmptyDialog() {
+  _showEmptyChanges() {
     this.app.els.commitFiles.innerHTML =
       '<li class="commit-empty">No changes to commit</li>'
     GitManager._resetDiffPane()
     this.app.els.commitMessage.value = ''
-    this.app.els.commitDialog.classList.add('visible')
   }
 
   static _resetDiffPane() {
@@ -84,7 +140,7 @@ export class GitManager {
     })
   }
 
-  /** Check or uncheck every file in the commit dialog. */
+  /** Check or uncheck every file in the Changes tab. */
 
   selectAll(checked) {
     this.app.els.commitFiles
@@ -113,12 +169,6 @@ export class GitManager {
   _highlightFileRow(filePath) {
     this.app.els.commitFiles.querySelectorAll('.commit-file-item')
       .forEach(li => li.classList.toggle('active', li.dataset.file === filePath))
-  }
-
-  /** Hide the commit dialog overlay. */
-
-  closeDialog() {
-    this.app.els.commitDialog.classList.remove('visible')
   }
 
   /** Validate and submit a git commit. */
@@ -152,6 +202,59 @@ export class GitManager {
     }
     catch (err) {
       this.app.toast.error(`Commit failed: ${err.message}`)
+    }
+  }
+
+  // ── Remote actions ──
+
+  /*
+   * Push and pull are only offered when the project has a remote URL. The
+   * server authenticates on its own behalf (netrc or SSH key), so nothing
+   * user-specific is sent along.
+   */
+
+  _applyRemoteState() {
+    const remote = this.app.currentBucketRemote()
+    const title = remote ? `Remote: ${remote}` : 'No remote configured for this project'
+    for (const id of ['btn-git-pull', 'btn-git-push']) {
+      const btn = document.getElementById(id)
+      btn.disabled = !remote
+      btn.title = title
+    }
+  }
+
+  /** Push the current branch to the project's remote. */
+
+  async push() {
+    await this._runRemoteAction('Push', () => this.app.api.gitPush(this.app.bucket))
+  }
+
+  /** Pull the project's remote into the working tree and refresh the UI. */
+
+  async pull() {
+    const result = await this._runRemoteAction(
+      'Pull', () => this.app.api.gitPull(this.app.bucket),
+    )
+    if (!result)
+      return
+    await this.app.reloadAfterPull(result.changed)
+    if (this._tab === 'changes')
+      await this.loadChanges()
+    else
+      await this.history.load(this.history.filePath)
+  }
+
+  async _runRemoteAction(label, action) {
+    if (!this.app.bucket)
+      return null
+    try {
+      const result = await action()
+      this.app.toast.success(`${label} succeeded.`)
+      return result
+    }
+    catch (err) {
+      this.app.toast.error(`${label} failed: ${err.message}`)
+      return null
     }
   }
 

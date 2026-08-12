@@ -16,6 +16,12 @@ class User(BaseModel):
     '''Per-bucket role map for API key authenticated requests (``None`` for OIDC users).'''
 
 
+class Profile(BaseModel):
+    '''Optional display name and email a user is credited with in commits.'''
+    name: str = Field('', max_length=100)
+    email: str = Field('', max_length=100)
+
+
 # ── Buckets ──
 
 
@@ -33,6 +39,7 @@ class BucketCreate(BaseModel):
     slug: Slug
     name: str = Field('', max_length=50)
     description: str = ''
+    remote: str = ''
     access: list[AccessEntry] = []
 
 
@@ -40,6 +47,7 @@ class BucketUpdate(BaseModel):
     '''Request body for updating bucket metadata. Omitted fields are unchanged.'''
     name: str | None = Field(None, max_length=50)
     description: str | None = None
+    remote: str | None = None
     access: list[AccessEntry] | None = None
 
 
@@ -48,6 +56,7 @@ class BucketInfo(BaseModel):
     slug: str
     name: str = ''
     description: str
+    remote: str = ''
     access: list[AccessEntry]
 
 
@@ -122,6 +131,13 @@ class RestoreRequest(BaseModel):
     '''Request body for restoring files from a specific commit.'''
     ref: str
     paths: list[str]
+
+
+class RemoteResult(BaseModel):
+    '''Result of a push or pull against the bucket's remote.'''
+    output: str
+    changed: list[str] = []
+    '''File paths updated by a pull (always empty for a push).'''
 
 
 # ── Templates ──

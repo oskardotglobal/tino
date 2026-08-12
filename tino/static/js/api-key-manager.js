@@ -139,7 +139,7 @@ export class ApiKeyManager {
         const label = escapeHtml(this.app.bucketDisplayName(slug))
         return `<span class="apikey-access-chip">${label} → ${escapeHtml(role)}</span>`
       }).join('')
-      const noAccess = '<span class="apikey-no-access">no bucket access</span>'
+      const noAccess = '<span class="apikey-no-access">no project access</span>'
       const accessHtml = entries.length ? chips : noAccess
       return '<li class="apikey-item">' +
           '<div class="apikey-item-header">' +

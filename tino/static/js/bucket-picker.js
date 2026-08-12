@@ -1,7 +1,8 @@
 import { escapeHtml } from './constants.js'
 
 /**
- * Manages the bucket picker dialog and bucket CRUD form.
+ * Manages the project picker dialog and the project CRUD form. Projects are
+ * called buckets in the API and on disk; only the wording differs.
  */
 
 export class BucketPicker {
@@ -57,7 +58,7 @@ export class BucketPicker {
       li.innerHTML =
         '<div class="bucket-pick-header">' +
         '<span class="material-symbols-outlined">' +
-        'database</span>' +
+        'folder</span>' +
         '<span class="bucket-pick-name">' +
         `${escapeHtml(bkt.name || bkt.slug)}</span>${adminBtns}` +
         `</div>${desc}`
@@ -108,7 +109,7 @@ export class BucketPicker {
 
   _showListView() {
     this.app.els.bucketDialogTitle
-      .querySelector('span').textContent = 'Select Bucket'
+      .querySelector('span').textContent = 'Select Project'
     document.getElementById('bucket-view-list')
       .classList.remove('hidden')
     document.getElementById('bucket-view-form')
@@ -122,7 +123,7 @@ export class BucketPicker {
     const isNew = !bucket
     this.app.els.bucketDialogTitle
       .querySelector('span').textContent =
-      isNew ? 'New Bucket' : `Edit: ${bucket.name || bucket.slug}`
+      isNew ? 'New Project' : `Edit: ${bucket.name || bucket.slug}`
     document.getElementById('bucket-view-list')
       .classList.add('hidden')
     document.getElementById('bucket-view-form')
@@ -137,6 +138,7 @@ export class BucketPicker {
     this.app.els.bucketFormName.value = isNew ? '' : bucket.name || ''
     this.app.els.bucketFormDesc.value =
       isNew ? '' : bucket.description || ''
+    this.app.els.bucketFormRemote.value = isNew ? '' : bucket.remote || ''
     this._editingSlug = isNew ? null : bucket.slug
     BucketPicker._renderAccessList(bucket ? bucket.access : [])
     if (isNew)
@@ -190,7 +192,7 @@ export class BucketPicker {
 
   _validateSlug(slug) {
     if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug)) {
-      this.app.toast.error('Slug must be lowercase alphanumeric with hyphens (e.g. "my-bucket").')
+      this.app.toast.error('Slug must be lowercase alphanumeric with hyphens (e.g. "my-project").')
       return false
     }
     return true
@@ -215,12 +217,13 @@ export class BucketPicker {
       access: BucketPicker._collectAccessEntries(),
       description: this.app.els.bucketFormDesc.value.trim(),
       name: this.app.els.bucketFormName.value.trim(),
+      remote: this.app.els.bucketFormRemote.value.trim(),
     }
   }
 
   async _deleteBucket(slug) {
     // eslint-disable-next-line no-alert
-    if (!confirm(`Delete bucket "${slug}"?`))
+    if (!confirm(`Delete project "${slug}"?`))
       return
     await this.app.api.deleteBucket(slug)
     if (this.app.bucket === slug)

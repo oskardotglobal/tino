@@ -4,10 +4,11 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import get_current_user, resolve_role
+from ..auth import get_current_user, get_profile_service, resolve_role
 from ..dependencies import get_bucket_service, require_global_admin, require_viewer
 from ..models import BucketCreate, BucketInfo, BucketUpdate
 from ..services.bucket import BucketService
+from ..services.profile import ProfileService
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +53,14 @@ async def create_bucket(
     body: BucketCreate,
     user=Depends(require_global_admin),
     svc: BucketService = Depends(get_bucket_service),
+    profiles: ProfileService = Depends(get_profile_service),
 ):
     '''Create a new bucket (initializes a git repo with .meta.yml).'''
     try:
         result = svc.create(
             body.slug, body.description, body.access,
-            name=body.name, user=user,
+            name=body.name, remote=body.remote,
+            author=profiles.identity(user.username, user.email),
         )
         logger.info('Bucket created: %s (user: %s)', body.slug, user.username)
         return result
@@ -74,11 +77,13 @@ async def update_bucket(
     slug: str, body: BucketUpdate,
     user=Depends(require_global_admin),
     svc: BucketService = Depends(get_bucket_service),
+    profiles: ProfileService = Depends(get_profile_service),
 ):
-    '''Update a bucket's description or access rules.'''
+    '''Update a bucket's description, remote, or access rules.'''
     bucket = svc.update(
         slug, body.description, body.access,
-        name=body.name, user=user,
+        name=body.name, remote=body.remote,
+        author=profiles.identity(user.username, user.email),
     )
 
     if not bucket:

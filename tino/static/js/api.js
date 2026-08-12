@@ -20,6 +20,18 @@ export class TinoAPI extends GitAPI {
     return this._fetch('/api/me')
   }
 
+  /** @returns {Promise<{name: string, email: string}>} The user's own profile. */
+
+  getProfile() {
+    return this._fetch('/api/profile')
+  }
+
+  /** Store the user's own profile. Empty fields clear the override. */
+
+  updateProfile(profile) {
+    return this._json('PUT', '/api/profile', profile)
+  }
+
   // ── Buckets ──
 
   /** @returns {Promise<Array>} List of all buckets. */

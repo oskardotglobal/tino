@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from . import config
 from .models import AccessEntry, User
 from .services.api_keys import ApiKeyService
+from .services.profile import ProfileService
 
 logger = getLogger(__name__)
 
@@ -23,10 +24,17 @@ ROLE_HIERARCHY = {'viewer': 0, 'editor': 1, 'committer': 2}
 
 _api_key_service = ApiKeyService(config.TINO_DATA_DIR / 'api_keys.yml')
 
+_profile_service = ProfileService(config.TINO_DATA_DIR / 'profiles.yml')
+
 
 def get_api_key_service() -> ApiKeyService:
     '''Return the global :class:`~tino.services.api_keys.ApiKeyService` instance.'''
     return _api_key_service
+
+
+def get_profile_service() -> ProfileService:
+    '''Return the global :class:`~tino.services.profile.ProfileService` instance.'''
+    return _profile_service
 
 
 # ── Authentication ──
@@ -205,7 +213,15 @@ async def logout(request: Request):
 
 @router.get('/api/me')
 async def me(user: User = Depends(get_current_user)):
-    '''Return the currently authenticated user's info including admin status.'''
+    '''Return the currently authenticated user's info including admin status.
+
+    ``display_name`` and ``display_email`` carry the identity commits are
+    authored with — the user's profile when set, otherwise the values from the
+    identity provider.
+    '''
     data = user.model_dump()
     data['is_admin'] = is_global_admin(user)
+    name, email = _profile_service.identity(user.username, user.email)
+    data['display_name'] = name
+    data['display_email'] = email
     return data

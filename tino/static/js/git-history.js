@@ -7,8 +7,9 @@ import { BinaryPreview } from './editor-binary.js'
 import { renderDiffEntries } from './diff-render.js'
 
 /**
- * Manages the git history dialog: browsing commits,
- * viewing file content or diffs at a specific ref, and restoring files.
+ * Renders the History tab of the Git dialog: browsing commits, viewing file
+ * content or diffs at a specific ref, and restoring files. The dialog itself
+ * (opening, closing, tabs) is owned by GitManager.
  */
 
 export class GitHistory {
@@ -21,11 +22,16 @@ export class GitHistory {
     this._mode = 'content'
   }
 
-  /** Bind history dialog event listeners. */
+  /** @returns {string|null} The file the history is restricted to, if any. */
+
+  get filePath() {
+    return this._historyFile || null
+  }
+
+  /** Bind history tab event listeners. */
 
   bind() {
     this._bindButtons()
-    this._bindDialog()
     this._bindLists()
   }
 
@@ -46,9 +52,6 @@ export class GitHistory {
   }
 
   _bindButtons() {
-    document.getElementById('btn-history')
-      .addEventListener('click', () => this.open(this.app.currentFile))
-    document.getElementById('btn-bucket-history').addEventListener('click', () => this.open())
     document.getElementById('history-search')
       .addEventListener('input', evt => this.filter(evt.target.value))
     document.getElementById('btn-history-restore').addEventListener('click', () => this.restore())
@@ -59,19 +62,12 @@ export class GitHistory {
     })
   }
 
-  _bindDialog() {
-    const dialog = document.getElementById('history-dialog')
-    document.getElementById('btn-history-close').addEventListener('click', () => this.close())
-    document.getElementById('btn-history-cancel').addEventListener('click', () => this.close())
-    dialog.addEventListener('click', evt => {
-      if (evt.target === dialog)
-        this.close()
-    })
-  }
+  /**
+   * Load the commit history into the tab, optionally filtered to a single file.
+   * @param {string} [filePath] - Restrict the history to this file.
+   */
 
-  /** Open the history dialog, optionally filtered to a single file. */
-
-  async open(filePath) {
+  async load(filePath) {
     if (!this.app.bucket)
       return
     this._historyFile = filePath || null
@@ -82,12 +78,11 @@ export class GitHistory {
     GitHistory._resetUi(filePath)
     this._renderModeButtons()
     await this._loadCommits(filePath)
-    document.getElementById('history-dialog').classList.add('visible')
   }
 
   static _resetUi(filePath) {
     document.getElementById('history-title').textContent =
-      filePath ? `History — ${filePath}` : 'Bucket History'
+      filePath ? `History of ${filePath}` : 'Project history'
     document.getElementById('history-search').value = ''
     document.getElementById('history-list').innerHTML = ''
     document.getElementById('history-files').innerHTML = ''
@@ -163,7 +158,7 @@ export class GitHistory {
     if (this._historyFile)
       await this._loadFileAtCommit(commit)
     else
-      await this._loadBucketAtCommit(commit.sha)
+      await this._loadProjectAtCommit(commit.sha)
   }
 
   async _loadFileAtCommit(commit) {
@@ -175,7 +170,7 @@ export class GitHistory {
       await this._renderPreviewFor(commit.sha, this._historyFile)
   }
 
-  async _loadBucketAtCommit(sha) {
+  async _loadProjectAtCommit(sha) {
     document.getElementById('history-preview-toolbar').classList.add('hidden')
     await this._renderFileTree(sha)
   }
@@ -281,7 +276,7 @@ export class GitHistory {
   }
 
   async _applyRestore(path) {
-    this.close()
+    this.app.git.closeDialog()
     delete this.app.fileBuffers[path]
     this.app.dirty.delete(path)
     await this.app.git.loadStatus()
@@ -289,10 +284,9 @@ export class GitHistory {
     await this.app.editor.openFile(path)
   }
 
-  /** Close the history dialog and reset selection state. */
+  /** Forget the current selection, e.g. when the Git dialog is closed. */
 
-  close() {
-    document.getElementById('history-dialog').classList.remove('visible')
+  reset() {
     this._selectedRef = null
     this._selectedPath = null
   }

@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 # Stand-in "parent" for diffing a root commit: git's well-known empty-tree SHA.
 _EMPTY_TREE_SHA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
+# The single remote a bucket can have, kept in sync with its .meta.yml.
+_REMOTE_NAME = 'origin'
+
 
 class GitService:
     '''Git operations on bucket repositories (status, commit, log, diff, restore).'''
@@ -82,6 +85,54 @@ class GitService:
             )
 
             return self._to_commit_info(commit)
+
+    def push(self, slug: str) -> str:
+        '''Push the current branch to the bucket's ``origin`` remote.
+
+        Authentication is up to the server's git configuration (a ``.netrc``
+        for HTTP(S) remotes, or an SSH key for SSH remotes) — TINO neither
+        stores nor forwards per-user credentials.
+        '''
+        with self._open(slug) as repo:
+            self._require_remote(repo)
+            output = repo.git.push(_REMOTE_NAME, f'HEAD:{repo.active_branch.name}')
+            logger.info('Pushed %s to %s', slug, _REMOTE_NAME)
+            return output
+
+    def pull(self, slug: str) -> tuple[str, list[str]]:
+        '''Fast-forward the current branch from ``origin``.
+
+        :returns: ``(git output, paths changed in the working tree)``.
+
+        Only fast-forwards are allowed: a merge or rebase could leave conflict
+        markers in the working tree, which the web UI has no way to resolve.
+        '''
+        with self._open(slug) as repo:
+            self._require_remote(repo)
+            branch = repo.active_branch.name
+            before = repo.head.commit.hexsha
+            output = repo.git.pull('--ff-only', _REMOTE_NAME, branch)
+            changed = self._changed_between(repo, before, repo.head.commit.hexsha)
+            logger.info('Pulled %s from %s (%d files changed)', slug, _REMOTE_NAME, len(changed))
+            return output, changed
+
+    @staticmethod
+    def _require_remote(repo) -> None:
+        '''Raise ``ValueError`` when the repository has no ``origin`` remote.'''
+        if not any(r.name == _REMOTE_NAME for r in repo.remotes):
+            raise ValueError('No remote configured for this bucket')
+
+    @staticmethod
+    def _changed_between(repo, before: str, after: str) -> list[str]:
+        '''List the user file paths that differ between two commits.'''
+        if before == after:
+            return []
+
+        paths = set()
+        for diff in repo.commit(before).diff(after):
+            paths.update(p for p in (diff.a_path, diff.b_path) if p)
+
+        return sorted(p for p in paths if not p.startswith('.'))
 
     def log(self, slug: str, path: str | None = None, max_count: int = 50) -> list[CommitInfo]:
         '''Return commit history, optionally filtered to a single file.'''

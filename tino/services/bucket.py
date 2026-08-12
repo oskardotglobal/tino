@@ -8,11 +8,13 @@ from pathlib import Path
 import git
 import yaml
 
-from ..models import AccessEntry, BucketInfo, User
+from ..models import AccessEntry, BucketInfo
 
 logger = logging.getLogger(__name__)
 
 META_FILE = '.meta.yml'
+
+REMOTE_NAME = 'origin'
 
 
 class BucketService:
@@ -62,6 +64,7 @@ class BucketService:
             slug=slug,
             name=meta.get('name', ''),
             description=meta.get('description', ''),
+            remote=meta.get('remote', ''),
             access=[AccessEntry(**a) for a in meta.get('access', [])],
         )
 
@@ -85,14 +88,31 @@ class BucketService:
         return self._to_info(slug, path)
 
     @staticmethod
-    def _actor(user: User) -> git.Actor:
-        return git.Actor(user.username, user.email)
+    def _actor(author: tuple[str, str] | None) -> git.Actor | None:
+        '''Build a git actor from an ``(name, email)`` pair, if one was given.'''
+        return git.Actor(*author) if author else None
 
-    def create(
+    @staticmethod
+    def _sync_remote(repo: git.Repo, url: str) -> None:
+        '''Point the ``origin`` remote at *url*, or remove it when *url* is empty.'''
+        existing = next((r for r in repo.remotes if r.name == REMOTE_NAME), None)
+
+        if not url:
+            if existing:
+                git.Remote.remove(repo, REMOTE_NAME)
+            return
+
+        if existing:
+            existing.set_url(url)
+        else:
+            repo.create_remote(REMOTE_NAME, url)
+
+    def create(  # pylint: disable=too-many-arguments
         self, slug: str, description: str = '',
         access: list[AccessEntry] | None = None, *,
         name: str = '',
-        user: User | None = None,
+        remote: str = '',
+        author: tuple[str, str] | None = None,
     ) -> BucketInfo:
         '''Create a new bucket: mkdir, git init, write .meta.yml, initial commit.'''
         path = self._path(slug)
@@ -105,6 +125,8 @@ class BucketService:
         meta = {'description': description}
         if name:
             meta['name'] = name
+        if remote:
+            meta['remote'] = remote
         if access:
             meta['access'] = [a.model_dump() for a in access]
         self._write_meta(path, meta)
@@ -112,20 +134,22 @@ class BucketService:
         repo = git.Repo.init(path)
         try:
             repo.index.add([META_FILE])
-            actor = self._actor(user) if user else None
+            actor = self._actor(author)
             repo.index.commit('Initialize bucket\n\nTino-Meta: true',
                               author=actor, committer=actor)
+            self._sync_remote(repo, remote)
         finally:
             repo.close()
 
         logger.info('Created bucket %s', slug)
         return self._to_info(slug, path)
 
-    def update(
+    def update(  # pylint: disable=too-many-arguments
         self, slug: str, description: str | None = None,
         access: list[AccessEntry] | None = None, *,
         name: str | None = None,
-        user: User | None = None,
+        remote: str | None = None,
+        author: tuple[str, str] | None = None,
     ) -> BucketInfo | None:
         '''Update a bucket's .meta.yml. Only provided fields are changed.'''
         # Read-modify-write of .meta.yml must be serialized per-slug.
@@ -145,6 +169,11 @@ class BucketService:
                     meta.pop('name', None)
             if description is not None:
                 meta['description'] = description
+            if remote is not None:
+                if remote:
+                    meta['remote'] = remote
+                else:
+                    meta.pop('remote', None)
             if access is not None:
                 meta['access'] = [a.model_dump() for a in access]
 
@@ -153,11 +182,13 @@ class BucketService:
             repo = git.Repo(path)
             try:
                 repo.index.add([META_FILE])
-                actor = self._actor(user) if user else None
+                actor = self._actor(author)
                 repo.index.commit(
                     'Update bucket metadata\n\nTino-Meta: true',
                     author=actor, committer=actor,
                 )
+                if remote is not None:
+                    self._sync_remote(repo, remote)
             finally:
                 repo.close()
 

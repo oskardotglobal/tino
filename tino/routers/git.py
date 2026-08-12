@@ -6,11 +6,13 @@ import mimetypes
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 
+from ..auth import get_profile_service
 from ..collab import CollabManager
 from ..dependencies import get_collab_manager, get_git_service, get_notifier, require_committer, \
     require_editor, require_viewer
-from ..models import CommitInfo, CommitRequest, DiffEntry, FileStatus, RestoreRequest
+from ..models import CommitInfo, CommitRequest, DiffEntry, FileStatus, RemoteResult, RestoreRequest
 from ..services.git import GitService
+from ..services.profile import ProfileService
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +39,13 @@ async def git_commit(
     slug: str, body: CommitRequest,
     user=Depends(require_committer),
     svc: GitService = Depends(get_git_service),
+    profiles: ProfileService = Depends(get_profile_service),
 ):
-    '''Stage the selected files and create a new commit.'''
+    '''Stage the selected files and create a new commit.
+
+    The commit is authored with the user's profile identity when they set one,
+    and with their username and OIDC email otherwise.
+    '''
     if not body.files:
         logger.warning(
             'Commit rejected for %s: no files specified (user: %s)',
@@ -46,8 +53,10 @@ async def git_commit(
         )
         raise HTTPException(400, 'No files specified')
 
+    author, email = profiles.identity(user.username, user.email)
+
     try:
-        result = svc.commit(slug, body.files, body.message, author=user.username, email=user.email)
+        result = svc.commit(slug, body.files, body.message, author=author, email=email)
     except Exception as exc:
         logger.warning('Commit failed for %s (user: %s): %s', slug, user.username, exc)
         raise HTTPException(400, str(exc)) from exc
@@ -55,6 +64,62 @@ async def git_commit(
     logger.info('Committed %s: %r (user: %s)', slug, body.message, user.username)
     await get_notifier().notify(slug)
     return result
+
+
+@router.post('/push', response_model=RemoteResult)
+async def git_push(
+    slug: str,
+    user=Depends(require_committer),
+    svc: GitService = Depends(get_git_service),
+):
+    '''Push the bucket's current branch to its remote.
+
+    Credentials come from the server's git configuration; TINO does not handle
+    per-user git authentication.
+    '''
+    try:
+        output = svc.push(slug)
+
+    except Exception as exc:
+        logger.warning('git push failed for %s (user: %s): %s', slug, user.username, exc)
+        raise HTTPException(400, _git_error(exc)) from exc
+
+    logger.info('Pushed %s (user: %s)', slug, user.username)
+    return RemoteResult(output=output)
+
+
+@router.post('/pull', response_model=RemoteResult)
+async def git_pull(
+    slug: str,
+    user=Depends(require_committer),
+    svc: GitService = Depends(get_git_service),
+    collab: CollabManager = Depends(get_collab_manager),
+):
+    '''Fast-forward the bucket's current branch from its remote.
+
+    Open collaboration rooms for the updated files are reloaded so connected
+    editors adopt the new content, just like a restore does.
+    '''
+    try:
+        output, changed = svc.pull(slug)
+
+    except Exception as exc:
+        logger.warning('git pull failed for %s (user: %s): %s', slug, user.username, exc)
+        raise HTTPException(400, _git_error(exc)) from exc
+
+    logger.info('Pulled %s: %d file(s) changed (user: %s)', slug, len(changed), user.username)
+
+    if changed:
+        await collab.reload_rooms(slug, changed)
+        await get_notifier().notify(slug)
+
+    return RemoteResult(changed=changed, output=output)
+
+
+def _git_error(exc: Exception) -> str:
+    '''Extract the most useful message from a failed git invocation.'''
+    stderr = getattr(exc, 'stderr', '') or ''
+    return stderr.strip() or str(exc)
 
 
 @router.get('/log', response_model=list[CommitInfo])

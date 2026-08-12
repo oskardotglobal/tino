@@ -28,6 +28,18 @@ export class GitAPI extends HttpClient {
     )
   }
 
+  /** Push the current branch to the bucket's remote. */
+
+  gitPush(slug) {
+    return this._json('POST', `${bucketPath(slug)}/git/push`, {})
+  }
+
+  /** Fast-forward the current branch from the bucket's remote. */
+
+  gitPull(slug) {
+    return this._json('POST', `${bucketPath(slug)}/git/pull`, {})
+  }
+
   /** Get commit history, optionally filtered by path. */
 
   gitLog(slug, path, limit) {

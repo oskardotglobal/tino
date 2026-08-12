@@ -49,23 +49,34 @@ const bindDownloadButton = app => {
     })
 }
 
+/* Close buttons, backdrop click, and the Changes/History tab strip. */
+
+const bindGitDialogChrome = app => {
+  for (const id of ['btn-commit-cancel', 'btn-history-cancel', 'btn-git-close-x'])
+    document.getElementById(id).addEventListener('click', () => app.git.closeDialog())
+  app.els.gitDialog.addEventListener('click', evt => {
+    if (evt.target === app.els.gitDialog)
+      app.git.closeDialog()
+  })
+  document.querySelectorAll('.git-tab').forEach(btn => {
+    btn.addEventListener('click', () => app.git.selectTab(btn.dataset.tab))
+  })
+}
+
 const bindGitButtons = app => {
-  document.getElementById('btn-commit')
+  document.getElementById('btn-git')
     .addEventListener('click', () => {
       app.git.openDialog()
+    })
+  document.getElementById('btn-history')
+    .addEventListener('click', () => {
+      app.git.openHistory(app.currentFile)
     })
   document.getElementById('btn-commit-submit')
     .addEventListener('click', () => {
       app.git.submit()
     })
-  document.getElementById('btn-commit-cancel')
-    .addEventListener('click', () => {
-      app.git.closeDialog()
-    })
-  app.els.commitDialog.addEventListener('click', evt => {
-    if (evt.target === app.els.commitDialog)
-      app.git.closeDialog()
-  })
+  bindGitDialogChrome(app)
   document.getElementById('btn-commit-all')
     .addEventListener('click', () => {
       app.git.selectAll(true)
@@ -73,6 +84,14 @@ const bindGitButtons = app => {
   document.getElementById('btn-commit-none')
     .addEventListener('click', () => {
       app.git.selectAll(false)
+    })
+  document.getElementById('btn-git-pull')
+    .addEventListener('click', () => {
+      app.git.pull()
+    })
+  document.getElementById('btn-git-push')
+    .addEventListener('click', () => {
+      app.git.push()
     })
   app.els.commitFiles.addEventListener('click', evt => {
     const name = evt.target.closest('.commit-file-name')
