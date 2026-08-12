@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # ── Auth ──
 
@@ -26,16 +26,31 @@ class Profile(BaseModel):
 
 
 class AccessEntry(BaseModel):
-    '''Maps a Keycloak group to a role within a bucket.'''
-    group: str
-    role: str  # viewer | editor
+    '''Grants a role within a bucket to either an OIDC group or a single user.
+
+    Exactly one of ``group`` or ``user`` must be set. Entries stored before
+    single-user sharing existed only carry ``group``, so they keep parsing.
+    '''
+    group: str = ''
+    user: str = ''
+    role: str  # viewer | editor | committer
+
+    @model_validator(mode='after')
+    def _exactly_one_subject(self) -> 'AccessEntry':
+        '''Reject entries naming both a group and a user, or neither.'''
+        if bool(self.group) == bool(self.user):
+            raise ValueError('Set exactly one of "group" or "user"')
+        return self
 
 
 Slug = Annotated[str, Field(pattern=r'^[a-z0-9]+(?:-[a-z0-9]+)*$', min_length=1, max_length=50)]
 
 
 class BucketCreate(BaseModel):
-    '''Request body for creating a new bucket.'''
+    '''Request body for creating a new bucket.
+
+    The creator becomes the owner; there is no owner field to spoof.
+    '''
     slug: Slug
     name: str = Field('', max_length=50)
     description: str = ''
@@ -49,6 +64,8 @@ class BucketUpdate(BaseModel):
     description: str | None = None
     remote: str | None = None
     access: list[AccessEntry] | None = None
+    owner: str | None = Field(None, max_length=100)
+    '''Transfers ownership. Only an administrator or the current owner may set it.'''
 
 
 class BucketInfo(BaseModel):
@@ -57,6 +74,8 @@ class BucketInfo(BaseModel):
     name: str = ''
     description: str
     remote: str = ''
+    owner: str = ''
+    '''Username of the owner, or empty for buckets created before ownership existed.'''
     access: list[AccessEntry]
 
 

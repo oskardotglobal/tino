@@ -5,7 +5,7 @@ from functools import lru_cache
 from fastapi import Depends, HTTPException
 
 from . import config
-from .auth import check_access, get_current_user, is_global_admin
+from .auth import can_manage_access, check_access, get_current_user, is_global_admin
 from .collab import CollabManager
 from .models import User
 from .notifier import BucketNotifier
@@ -30,7 +30,7 @@ def _require_role(min_role: str):
         if not bucket:
             raise HTTPException(404, 'Bucket not found')
 
-        check_access(user, bucket.access, min_role, slug)
+        check_access(user, bucket.access, min_role, slug, bucket.owner)
         return user
 
     return dependency
@@ -102,6 +102,27 @@ def get_collab_manager() -> CollabManager:
         auto_save=config.TINO_SAVE_DEBOUNCE_MS > 0,
         room_ttl=config.TINO_ROOM_TTL,
     )
+
+
+def require_bucket_owner(
+    slug: str,
+    user: User = Depends(get_current_user),
+    svc: BucketService = Depends(get_bucket_service),
+) -> User:
+    '''Require the user to own the bucket, or to be a global administrator.
+
+    Guards everything that changes a bucket itself — its metadata, its access
+    control list, and its deletion — rather than the files inside it.
+    '''
+    bucket = svc.get(slug)
+
+    if not bucket:
+        raise HTTPException(404, 'Bucket not found')
+
+    if not can_manage_access(user, bucket.owner):
+        raise HTTPException(403, 'Only the project owner or an administrator may do this')
+
+    return user
 
 
 require_viewer    = _require_role('viewer')

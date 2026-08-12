@@ -97,37 +97,62 @@ def is_global_admin(user: User) -> bool:
     return bool(config.TINO_ADMIN_GROUPS & set(user.groups))
 
 
-def resolve_role(user: User, access: list[AccessEntry], slug: str | None = None) -> str | None:
+def is_owner(user: User, owner: str) -> bool:
+    '''Check whether *user* owns a bucket. API keys never own one.'''
+    return bool(owner) and user.api_key_access is None and user.username == owner
+
+
+def can_manage_access(user: User, owner: str) -> bool:
+    '''Check who may edit a bucket's metadata, ACL, and existence.'''
+    return is_global_admin(user) or is_owner(user, owner)
+
+
+def _entry_applies(entry: AccessEntry, user: User) -> bool:
+    '''Check whether an ACL entry names one of the user's groups, or the user.'''
+    if entry.user:
+        return entry.user == user.username
+    return entry.group in user.groups
+
+
+def resolve_role(user: User, access: list[AccessEntry], slug: str | None = None,
+                 owner: str = '') -> str | None:
     '''Return the highest role the user holds in a bucket, or ``None`` if no access.
 
     For API key users the role is looked up directly from ``user.api_key_access``
     using *slug*; the bucket ACL is ignored.
+
+    Owners always hold the full ``committer`` role on their own bucket. A bucket
+    with an owner is private by default: without a matching ACL entry, nobody but
+    the owner and administrators gets in. Buckets predating ownership have no
+    owner and keep falling back to :attr:`~tino.config.TINO_DEFAULT_ROLE` when
+    their ACL is empty.
     '''
     if user.api_key_access is not None:
         return user.api_key_access.get(slug) if slug else None
 
-    if is_global_admin(user):
+    if is_global_admin(user) or is_owner(user, owner):
         return 'committer'
-
-    if not access:
-        default = config.TINO_DEFAULT_ROLE
-        return default if default != 'none' else None
 
     best = None
     for entry in access:
-        if entry.group in user.groups:
+        if _entry_applies(entry, user):
             if best is None or ROLE_HIERARCHY.get(entry.role, 0) > ROLE_HIERARCHY.get(best, 0):
                 best = entry.role
+
+    if best is None and not access and not owner:
+        default = config.TINO_DEFAULT_ROLE
+        return default if default != 'none' else None
+
     return best
 
 
 def check_access(user: User, access: list[AccessEntry], min_role: str,
-                 slug: str | None = None) -> None:
+                 slug: str | None = None, owner: str = '') -> None:
     '''Raise 403 if the user lacks the minimum required role on a bucket.'''
     if is_global_admin(user):
         return
 
-    role = resolve_role(user, access, slug)
+    role = resolve_role(user, access, slug, owner)
     if role is None:
         raise HTTPException(403, 'You do not have access to this bucket')
 

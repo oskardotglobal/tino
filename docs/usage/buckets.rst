@@ -20,17 +20,36 @@ Select a bucket from the list to load its files into the editor.
 Creating a bucket
 ~~~~~~~~~~~~~~~~~
 
-Administrators can create new buckets from the picker dialog.
+Any authenticated user can create new buckets from the picker dialog.
 Click **New Project**, fill in a slug (the unique identifier) and an optional description, then save.
 
 The same form holds the optional **Remote URL** used by
 :ref:`push and pull <usage/git:Remotes>`.
 
+Ownership
+~~~~~~~~~
+
+The user who creates a bucket becomes its **owner**.
+
+An owner always holds the **Committer** role on their own bucket, and a new
+bucket is visible to nobody else until the owner shares it. Only the owner and
+administrators can edit a bucket's metadata and access control list, transfer
+its ownership, or delete it.
+
+.. note::
+
+  Buckets created before ownership existed have no owner recorded in their
+  ``.meta.yml``. They keep the previous behaviour: with an empty access control
+  list, every authenticated user gets the :attr:`TINO_DEFAULT_ROLE
+  <tino.config.TINO_DEFAULT_ROLE>`. Set an owner (via the API's ``owner`` field)
+  to make such a bucket private.
+
 Access control
 ~~~~~~~~~~~~~~
 
 Each bucket has its own access control list.
-Entries map an OIDC group to one of three roles:
+Entries share the bucket with either an OIDC **group** or a single **user**
+(matched against the login name), in one of three roles:
 
 .. list-table::
    :header-rows: 1
@@ -48,3 +67,6 @@ Entries map an OIDC group to one of three roles:
 .. note::
 
   Members of the configured admin groups (see :attr:`TINO_ADMIN_GROUPS <tino.config.TINO_ADMIN_GROUPS>`) are implicitly treated as **Committer** on every bucket.
+
+A user who matches several entries — for example through a group *and* a
+personal entry — holds the highest of the matching roles.

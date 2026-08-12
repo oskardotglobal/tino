@@ -65,6 +65,7 @@ class BucketService:
             name=meta.get('name', ''),
             description=meta.get('description', ''),
             remote=meta.get('remote', ''),
+            owner=meta.get('owner', ''),
             access=[AccessEntry(**a) for a in meta.get('access', [])],
         )
 
@@ -107,11 +108,27 @@ class BucketService:
         else:
             repo.create_remote(REMOTE_NAME, url)
 
+    @staticmethod
+    def _merge_optional(meta: dict, key: str, value: str | None) -> None:
+        '''Apply an optional metadata field: ``None`` keeps it, empty removes it.'''
+        if value is None:
+            return
+        if value:
+            meta[key] = value
+        else:
+            meta.pop(key, None)
+
+    @staticmethod
+    def _dump_access(access: list[AccessEntry]) -> list[dict]:
+        '''Serialize access entries, keeping only the subject each one names.'''
+        return [a.model_dump(exclude_defaults=True) for a in access]
+
     def create(  # pylint: disable=too-many-arguments
         self, slug: str, description: str = '',
         access: list[AccessEntry] | None = None, *,
         name: str = '',
         remote: str = '',
+        owner: str = '',
         author: tuple[str, str] | None = None,
     ) -> BucketInfo:
         '''Create a new bucket: mkdir, git init, write .meta.yml, initial commit.'''
@@ -127,8 +144,10 @@ class BucketService:
             meta['name'] = name
         if remote:
             meta['remote'] = remote
+        if owner:
+            meta['owner'] = owner
         if access:
-            meta['access'] = [a.model_dump() for a in access]
+            meta['access'] = self._dump_access(access)
         self._write_meta(path, meta)
 
         repo = git.Repo.init(path)
@@ -149,6 +168,7 @@ class BucketService:
         access: list[AccessEntry] | None = None, *,
         name: str | None = None,
         remote: str | None = None,
+        owner: str | None = None,
         author: tuple[str, str] | None = None,
     ) -> BucketInfo | None:
         '''Update a bucket's .meta.yml. Only provided fields are changed.'''
@@ -162,20 +182,12 @@ class BucketService:
                 return None
 
             meta = self._read_meta(path)
-            if name is not None:
-                if name:
-                    meta['name'] = name
-                else:
-                    meta.pop('name', None)
+            for key, value in (('name', name), ('remote', remote), ('owner', owner)):
+                self._merge_optional(meta, key, value)
             if description is not None:
                 meta['description'] = description
-            if remote is not None:
-                if remote:
-                    meta['remote'] = remote
-                else:
-                    meta.pop('remote', None)
             if access is not None:
-                meta['access'] = [a.model_dump() for a in access]
+                meta['access'] = self._dump_access(access)
 
             self._write_meta(path, meta)
 

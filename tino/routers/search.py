@@ -31,13 +31,13 @@ def _allowed_slugs(user: User, svc: BucketService, bucket: str | None) -> list[s
         info = svc.get(bucket)
         if info is None:
             raise HTTPException(404, 'Bucket not found')
-        if resolve_role(user, info.access, bucket) is None:
+        if resolve_role(user, info.access, bucket, info.owner) is None:
             raise HTTPException(403, 'You do not have access to this bucket')
         return [bucket]
 
     return [
         info.slug for info in svc.list()
-        if resolve_role(user, info.access, info.slug) is not None
+        if resolve_role(user, info.access, info.slug, info.owner) is not None
     ]
 
 

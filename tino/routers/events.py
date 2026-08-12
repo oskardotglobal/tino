@@ -30,7 +30,7 @@ async def bucket_events(websocket: WebSocket, slug: str):
         return
 
     try:
-        check_access(user, bucket.access, 'viewer', slug)
+        check_access(user, bucket.access, 'viewer', slug, bucket.owner)
     except HTTPException:
         await websocket.close(code=4403, reason='Viewer role required')
         return
