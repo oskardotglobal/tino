@@ -1,12 +1,10 @@
 import { INDEX_NOT_FOUND, SAVE_DEBOUNCE_MS, SINGLE_ITEM } from './constants.js'
-import { loadSavedTabs, persistTabs } from './tab-store.js'
+import { dropStaleTabs, loadSavedTabs, persistTabs } from './tab-store.js'
 import { BinaryPreview } from './editor-binary.js'
 import { EditorCollab } from './editor-collab.js'
 import { EditorInput } from './editor-input.js'
 import { EditorToolbar } from './editor-toolbar.js'
 import { writeRoute } from './router.js'
-
-const PLACEHOLDER = 'Select a file to start editing...'
 
 /**
  * Manages file loading, saving, tabs, and binary preview.
@@ -58,7 +56,6 @@ export class EditorManager {
 
   _activateTab(path, loaded) {
     this.app.currentFile = path
-    this.app.els.editor.setPlaceholder('')
     if (this.app.openTabs.indexOf(path) === INDEX_NOT_FOUND)
       this.app.openTabs.push(path)
     this.collab.connect(path)
@@ -107,13 +104,32 @@ export class EditorManager {
   }
 
   _showTextEditor(content) {
-    this.app.els.binaryPreview.classList.add('hidden')
-    this.app.els.binaryPreview.innerHTML = ''
+    this._hideOverlays()
     const canEdit = ['editor', 'committer'].includes(this.app.bucketRole)
     this.app.els.editor.setContent(content)
     this.app.els.editor.setEditable(canEdit)
     this.app.els.editor.setHidden(false)
     this.toolbar[canEdit ? 'show' : 'hide']()
+  }
+
+  /* Replace the editor with a placeholder when no file is open. Read-only was
+     not enough: the toolbar dispatches transactions straight to the view,
+     bypassing EditorView.editable. */
+
+  _showEmptyState() {
+    this.collab.disconnect()
+    this.toolbar.hide()
+    this._hideOverlays()
+    this.app.els.editor.setContent('')
+    this.app.els.editor.setEditable(false)
+    this.app.els.editor.setHidden(true)
+    this.app.els.editorEmpty.classList.remove('hidden')
+  }
+
+  _hideOverlays() {
+    this.app.els.binaryPreview.classList.add('hidden')
+    this.app.els.binaryPreview.innerHTML = ''
+    this.app.els.editorEmpty.classList.add('hidden')
   }
 
   _refreshEditorUi() {
@@ -203,11 +219,8 @@ export class EditorManager {
   }
 
   _clearEditor() {
-    this.collab.disconnect()
     this.app.currentFile = null
-    this._showTextEditor('')
-    this.app.els.editor.setEditable(false)
-    this.app.els.editor.setPlaceholder(PLACEHOLDER)
+    this._showEmptyState()
     this.input.updateStatusBar()
     writeRoute(this.app.bucket, null)
   }
@@ -243,16 +256,8 @@ export class EditorManager {
   reconcileTabs(existingPaths) {
     if (this.app.pinnedPreview && !existingPaths.has(this.app.pinnedPreview))
       this.app.pinnedPreview = null
-    const stale = this.app.openTabs.filter(tp => !existingPaths.has(tp))
-    if (!stale.length)
+    if (!dropStaleTabs(this.app, existingPaths))
       return
-    stale.forEach(tp => {
-      const idx = this.app.openTabs.indexOf(tp)
-      if (idx !== INDEX_NOT_FOUND)
-        this.app.openTabs.splice(idx, SINGLE_ITEM)
-      delete this.app.fileBuffers[tp]
-      this.app.dirty.delete(tp)
-    })
     if (this.app.openTabs.includes(this.app.currentFile))
       this.input.renderTabs()
     else
@@ -270,13 +275,9 @@ export class EditorManager {
   /** Reset editor state when switching buckets. */
 
   resetState() {
-    this.collab.disconnect()
-    this.toolbar.hide()
     this.app.pinnedPreview = null
     this._clearOpenState()
-    this._showTextEditor('')
-    this.app.els.editor.setEditable(false)
-    this.app.els.editor.setPlaceholder(PLACEHOLDER)
+    this._showEmptyState()
     this.app.els.tabBar.innerHTML = ''
   }
 

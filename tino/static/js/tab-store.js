@@ -6,7 +6,7 @@
  * `path#line` string entries are still read, so older state loads unchanged.
  */
 
-import { SINGLE_ITEM } from './constants.js'
+import { INDEX_NOT_FOUND, SINGLE_ITEM } from './constants.js'
 
 const PREFIX = 'tino:tabs:'
 const LEGACY_SEP = '#'
@@ -65,4 +65,24 @@ export const loadSavedTabs = (slug, existingPaths) => {
       positions[norm.path] = { col: norm.col || SINGLE_ITEM, line: norm.line }
   })
   return { positions, tabs }
+}
+
+/**
+ * Drop open tabs whose files no longer exist on disk, clearing their cached
+ * buffers and dirty flags.
+ * @param {TinoApp} app - Main application instance.
+ * @param {Set<string>} existingPaths - Paths still present in the bucket.
+ * @returns {boolean} True when at least one tab was removed.
+ */
+
+export const dropStaleTabs = (app, existingPaths) => {
+  const stale = app.openTabs.filter(path => !existingPaths.has(path))
+  stale.forEach(path => {
+    const idx = app.openTabs.indexOf(path)
+    if (idx !== INDEX_NOT_FOUND)
+      app.openTabs.splice(idx, SINGLE_ITEM)
+    delete app.fileBuffers[path]
+    app.dirty.delete(path)
+  })
+  return stale.length > 0
 }
