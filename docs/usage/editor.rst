@@ -5,7 +5,7 @@
 
 TINO's editor is built on `CodeMirror 6 <https://codemirror.net/>`_ and
 offers Typst-aware syntax highlighting, structural indentation, search and
-navigation, code folding, and optional Vim keybindings.
+navigation, code folding, and optional Vim or Helix keybindings.
 
 Tabs
 ~~~~
@@ -114,16 +114,38 @@ Collapse a ``{…}`` or ``[…]`` block from the fold gutter beside the line
 numbers, and click again to expand it. When the cursor sits next to a bracket,
 its matching partner is highlighted.
 
-Vim mode
-~~~~~~~~
+Modal keybindings
+~~~~~~~~~~~~~~~~~
 
-Open the **settings** icon in the toolbar and switch **Vim mode** on to enable
-Vim keybindings. A status bar at the bottom of the editor shows the current mode
-and ``:`` command line, and the caret becomes a block cursor in normal mode. The
-setting is remembered per browser — switch it off again to return to the default
-editing mode.
+Open the **settings** icon in the toolbar and pick a **Keybindings** mode:
 
-The usual motions and operators apply, and ``u`` / :kbd:`Ctrl+R` undo and redo.
+.. list-table::
+   :header-rows: 1
+   :widths: 15 85
+
+   * - Mode
+     - Description
+   * - Default
+     - Plain CodeMirror keybindings — no modal editing.
+   * - Vim
+     - `Vim <https://www.vim.org/>`_ keybindings. A status bar at the bottom of
+       the editor shows the current mode and ``:`` command line, and the caret
+       becomes a block cursor in normal mode.
+   * - Helix
+     - `Helix <https://helix-editor.com/>`_ keybindings, with its
+       selection-first editing model.
+
+Only one mode is active at a time, and the choice is remembered per browser.
+In both modal modes the usual motions and operators apply, and ``u`` /
+:kbd:`Ctrl+R` undo and redo.
+
+Editor font
+~~~~~~~~~~~
+
+The settings dialog also holds the **Editor font** and **Font size**. The font
+accepts any CSS font family list (for example ``"JetBrains Mono", monospace``);
+leave it empty to keep the default. Both settings apply immediately and are
+remembered per browser.
 
 Saving
 ~~~~~~
@@ -139,9 +161,9 @@ Settings
 ~~~~~~~~
 
 The **settings** icon between the user name and **Logout** opens a dialog with
-the editor preferences — currently :ref:`Vim mode <usage/editor:Vim mode>` —
-plus, for administrators, entry points to :ref:`Fonts` and
-:ref:`API keys <usage/authentication:API keys>`.
+the editor preferences — :ref:`keybindings <usage/editor:Modal keybindings>` and
+the :ref:`editor font <usage/editor:Editor font>` — plus, for administrators,
+entry points to :ref:`Fonts` and :ref:`API keys <usage/authentication:API keys>`.
 
 Layout
 ~~~~~~

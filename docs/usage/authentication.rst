@@ -17,6 +17,22 @@ To sign out, click the **Logout** button in the top-right corner of the toolbar.
 
     Also have a look at the :ref:`Access control <usage/buckets:Access control>`, and :ref:`OIDC integration <operations/deployment:oidc>`.
 
+Profile
+-------
+
+Click your user name in the toolbar to open the **Profile** dialog. It holds an
+optional display name and email address, which are used to author your git
+commits instead of your login name and the email address from the identity
+provider. Leave both fields empty to fall back to those values.
+
+Profiles are stored server-side in ``profiles.yml`` inside the data directory,
+so they follow you across browsers. API key clients have no profile.
+
+.. note::
+
+   The profile only affects the commit author. It is not an identity check —
+   git author fields are free text in any git workflow.
+
 API keys
 --------
 

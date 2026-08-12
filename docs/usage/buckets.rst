@@ -6,17 +6,25 @@
 Documents are organised into **buckets**.
 Each bucket is a self-contained git repository that holds one or more (Typst) files.
 
+.. note::
+
+   The web UI calls buckets **projects**. The API, the on-disk layout, and this
+   documentation keep the original term.
+
 Selecting a bucket
 ~~~~~~~~~~~~~~~~~~
 
-Click the bucket button in the toolbar (top-left) to open the bucket picker.
+Click the project button in the toolbar (top-left) to open the picker.
 Select a bucket from the list to load its files into the editor.
 
 Creating a bucket
 ~~~~~~~~~~~~~~~~~
 
-Administrators can create new buckets from the bucket picker dialog.
-Click **New Bucket**, fill in a slug (the unique identifier) and an optional description, then save.
+Administrators can create new buckets from the picker dialog.
+Click **New Project**, fill in a slug (the unique identifier) and an optional description, then save.
+
+The same form holds the optional **Remote URL** used by
+:ref:`push and pull <usage/git:Remotes>`.
 
 Access control
 ~~~~~~~~~~~~~~
