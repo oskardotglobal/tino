@@ -47,3 +47,4 @@ export {
 } from '@codemirror/search'
 export { tags } from '@lezer/highlight'
 export { vim } from '@replit/codemirror-vim'
+export { helix } from 'codemirror-helix'

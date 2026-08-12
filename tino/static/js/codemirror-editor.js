@@ -21,10 +21,10 @@ import {
   placeholder,
   searchKeymap,
   selectNextOccurrence,
-  vim,
 } from './vendor/codemirror.js'
 import { typst, typstKeymap } from './codemirror-typst.js'
 import { SINGLE_ITEM } from './constants.js'
+import { keymapExtension } from './codemirror-keymaps.js'
 
 /**
  * Editor controller around a CodeMirror 6 EditorView. Owns the view, its
@@ -56,7 +56,7 @@ export class CodeMirrorEditor {
     this._editable = new Compartment()
     this._placeholder = new Compartment()
     this._collab = new Compartment()
-    this._vim = new Compartment()
+    this._keymap = new Compartment()
     this._wrap = new Compartment()
     this._view = new EditorView({
       parent,
@@ -82,12 +82,12 @@ export class CodeMirrorEditor {
   }
 
   /**
-   * Enable or disable Vim keybindings (with the mode/command status bar).
-   * @param {boolean} enabled - True to turn Vim mode on.
+   * Switch the modal keymap. Vim comes with its mode/command status bar.
+   * @param {string} mode - One of `default`, `vim`, or `helix`.
    */
 
-  setVim(enabled) {
-    this._view.dispatch({ effects: this._vim.reconfigure(enabled ? vim({ status: true }) : []) })
+  setKeymap(mode) {
+    this._view.dispatch({ effects: this._keymap.reconfigure(keymapExtension(mode)) })
   }
 
   /**
@@ -113,7 +113,7 @@ export class CodeMirrorEditor {
     return EditorState.create({
       doc,
       extensions: [
-        this._vim.of([]),
+        this._keymap.of([]),
         this._wrap.of(EditorView.lineWrapping),
         lineNumbers(),
         drawSelection(),
