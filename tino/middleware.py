@@ -44,13 +44,10 @@ class AuthMiddleware(BaseHTTPMiddleware):  # pylint: disable=too-few-public-meth
 
         path = request.url.path
 
-        # Public, static, MCP, and OAuth-discovery paths bypass the session gate.
-        # MCP endpoints validate their own OAuth bearer tokens downstream.
+        # Public and static paths bypass the session gate.
         is_public = path in _PUBLIC_PATHS
         is_static = path.startswith(_STATIC_PREFIXES)
-        is_mcp = path.startswith('/mcp')
-        is_well_known = path.startswith('/.well-known/')
-        if not (is_public or is_static or is_mcp or is_well_known):
+        if not (is_public or is_static):
             rejection = self._reject_if_unauthenticated(request, path)
             if rejection is not None:
                 return rejection
@@ -61,10 +58,10 @@ class AuthMiddleware(BaseHTTPMiddleware):  # pylint: disable=too-few-public-meth
     def _reject_if_unauthenticated(request, path):
         '''Return a 401/redirect response if the request lacks valid auth, else ``None``.
 
-        The only valid bearer credential here is a static API key — MCP OAuth
-        tokens target ``/mcp`` (bypassed above). The key is validated at the gate
-        rather than trusting any ``Bearer`` header to reach a route dependency, so
-        a route added without an auth dependency cannot be reached unauthenticated.
+        The only valid bearer credential here is a static API key. It is validated
+        at the gate rather than trusting any ``Bearer`` header to reach a route
+        dependency, so a route added without an auth dependency cannot be reached
+        unauthenticated.
         '''
         auth_header = request.headers.get('Authorization', '')
         if auth_header.startswith('Bearer '):
@@ -85,23 +82,6 @@ class AuthMiddleware(BaseHTTPMiddleware):  # pylint: disable=too-few-public-meth
         return RedirectResponse('/login')
 
 
-class _TrailingSlashMiddleware:  # pylint: disable=too-few-public-methods
-    '''Append a trailing slash to ``/mcp`` so the Starlette Mount matches.
-
-    Starlette's ``Mount('/mcp')`` compiles to a regex that requires at least
-    ``/mcp/``.  Bare ``/mcp`` falls through to the static-files catch-all and
-    returns 405.  This ASGI middleware rewrites the path in-place — no redirect.
-    '''
-
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope['type'] == 'http' and scope.get('path') == '/mcp':
-            scope['path'] = '/mcp/'
-        await self.app(scope, receive, send)
-
-
 def register_middleware(app: FastAPI) -> None:
     '''Attach session and auth middleware to the application.
 
@@ -111,7 +91,6 @@ def register_middleware(app: FastAPI) -> None:
     app.add_middleware(AuthMiddleware)
     secret_key = config.TINO_SECRET_KEY or secrets.token_hex(32)
     app.add_middleware(SessionMiddleware, secret_key=secret_key)
-    app.add_middleware(_TrailingSlashMiddleware)
     # Compress responses — the SVG preview ships as verbose text and shrinks
     # ~5-10x over the wire, which dominates load time on slow connections.
     app.add_middleware(GZipMiddleware, minimum_size=1024)

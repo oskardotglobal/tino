@@ -44,7 +44,6 @@ class TinoApp {
       bucketBtn: document.getElementById('bucket-btn'),
       bucketDialogTitle: document.getElementById('bucket-dialog-title'),
       bucketFormDesc: document.getElementById('bucket-form-desc'),
-      bucketFormMcp: document.getElementById('bucket-form-mcp'),
       bucketFormName: document.getElementById('bucket-form-name'),
       bucketFormSlug: document.getElementById('bucket-form-slug'),
       bucketLabel: document.getElementById('bucket-label'),

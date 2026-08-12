@@ -214,14 +214,6 @@
           <label class="form-label">Description</label>
           <textarea class="form-input" id="bucket-form-desc" rows="3" placeholder="Optional description..."></textarea>
 
-          <label class="form-label">MCP Instructions</label>
-          <details class="mcp-global" id="bucket-mcp-global" hidden>
-            <summary>Global instructions (read-only)</summary>
-            <p class="mcp-global-note">Sent to every bucket, before the instructions below.</p>
-            <pre class="mcp-global-text" id="bucket-mcp-global-text"></pre>
-          </details>
-          <textarea class="form-input" id="bucket-form-mcp" rows="6" placeholder="Optional instructions for AI agents..."></textarea>
-
           <label class="form-label">Access Control</label>
           <div id="bucket-access-list"></div>
           <button class="btn btn-secondary btn-small" id="btn-access-add">
@@ -411,7 +403,7 @@
       <div id="apikey-view-form" class="dialog-view hidden">
         <div class="bucket-form">
           <label class="form-label">Label</label>
-          <input class="form-input" id="apikey-form-label" type="text" placeholder="e.g. Claude Desktop MCP">
+          <input class="form-input" id="apikey-form-label" type="text" placeholder="e.g. CI pipeline">
 
           <label class="form-label">Bucket Access</label>
           <div id="apikey-access-list"></div>

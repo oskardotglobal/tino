@@ -11,7 +11,6 @@ export class BucketPicker {
   constructor(app) {
     this.app = app
     this._editingSlug = null
-    this._globalMcp = null
   }
 
   /** Open the bucket picker dialog and populate the list. */
@@ -129,26 +128,6 @@ export class BucketPicker {
     document.getElementById('bucket-view-form')
       .classList.remove('hidden')
     this._populateFormFields(bucket, isNew)
-    this._renderGlobalMcp()
-  }
-
-  /** Show the server-wide MCP instructions (read-only) when they are set. */
-
-  async _renderGlobalMcp() {
-    const details = document.getElementById('bucket-mcp-global')
-    details.open = false
-    details.hidden = true
-    try {
-      if (this._globalMcp === null)
-        this._globalMcp = (await this.app.api.mcpInstructions()).instructions || ''
-    }
-    catch {
-      this._globalMcp = ''
-    }
-    if (this._globalMcp) {
-      document.getElementById('bucket-mcp-global-text').textContent = this._globalMcp
-      details.hidden = false
-    }
   }
 
   _populateFormFields(bucket, isNew) {
@@ -158,8 +137,6 @@ export class BucketPicker {
     this.app.els.bucketFormName.value = isNew ? '' : bucket.name || ''
     this.app.els.bucketFormDesc.value =
       isNew ? '' : bucket.description || ''
-    this.app.els.bucketFormMcp.value =
-      isNew ? '' : bucket.mcp_instructions || ''
     this._editingSlug = isNew ? null : bucket.slug
     BucketPicker._renderAccessList(bucket ? bucket.access : [])
     if (isNew)
@@ -237,7 +214,6 @@ export class BucketPicker {
     return {
       access: BucketPicker._collectAccessEntries(),
       description: this.app.els.bucketFormDesc.value.trim(),
-      mcp_instructions: this.app.els.bucketFormMcp.value.trim(),
       name: this.app.els.bucketFormName.value.trim(),
     }
   }

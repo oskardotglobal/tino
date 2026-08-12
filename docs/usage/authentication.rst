@@ -56,18 +56,3 @@ Revoking a key
 ~~~~~~~~~~~~~~
 
 Open the **API Keys** dialog and delete the key.
-
-MCP
----
-
-The :ref:`MCP server <MCP server>` authenticates AI agents via **OAuth 2.0** using `CIMD <https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/>`_.
-
-When an MCP client connects, it opens a browser for the user to log in via the same OIDC provider TINO already uses.
-Every tool then runs **as that user** — the agent can only access buckets the user's group memberships allow.
-
-.. important::
-
-    MCP clients always authenticate via OAuth.
-    The OIDC provider must be able to act as a `CIMD`_-capable MCP authorisation server (see :ref:`MCP integration <operations/deployment:mcp>`).
-
-    Static :ref:`API keys <usage/authentication:API keys>` are deliberately **not accepted** by the MCP server — those are for automating the REST API.

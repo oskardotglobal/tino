@@ -36,7 +36,7 @@ services:
 
     environment:
 
-      # Public URL TINO is served on (used for OIDC redirects and, if enabled, MCP).
+      # Public URL TINO is served on (used for OIDC redirects).
       TINO_BASE_URL: https://tino.example.com
 
       # Your OIDC provider's discovery endpoint.

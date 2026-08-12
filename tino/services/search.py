@@ -24,7 +24,7 @@ class SearchService:  # pylint: disable=too-few-public-methods
     listing rules (``.git``, ``.meta.yml`` and dotfiles are excluded) and the
     path-traversal safety in :meth:`~tino.services.file.FileService.resolve`.
     Permission filtering (which buckets a user may search) is the caller's
-    responsibility — see the search router and the MCP ``search`` tool.
+    responsibility — see the search router.
     '''
 
     def __init__(self, file_service: FileService):

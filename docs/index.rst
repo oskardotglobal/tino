@@ -56,7 +56,6 @@ Content
    usage/fonts
    usage/theming
    usage/api
-   usage/mcp
 
 .. toctree::
    :maxdepth: 1
@@ -73,7 +72,6 @@ Content
    api/models
    api/auth
    api/collab
-   api/mcp
    api/middleware
    api/services
    api/routers
