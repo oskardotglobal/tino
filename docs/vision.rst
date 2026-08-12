@@ -46,7 +46,7 @@ TINO as the glue for AI integration
 
 Typst's structured, readable syntax and TINO's API together provide a strong foundation for AI-driven document generation. 
 By exposing TINO's capabilities as tools — most likely via `MCP <https://modelcontextprotocol.io/>`_ — an AI model can be given the ability to create and edit files, compile documents, and commit
-results directly into a bucket.
+results directly into a project.
 
 This makes TINO the glue between the AI model and the documents: the model reasons and generates, TINO handles the storage, versioning, and compilation.
 The result is a versioned, professionally typeset artefact — produced end-to-end without manual intervention.

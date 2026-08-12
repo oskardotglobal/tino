@@ -10,7 +10,6 @@ import {
   foldGutter,
   foldKeymap,
   gotoLine,
-  highlightSelectionMatches,
   history,
   historyKeymap,
   indentOnInput,
@@ -18,7 +17,7 @@ import {
   indentWithTab,
   keymap,
   lineNumbers,
-  placeholder,
+  panels,
   searchKeymap,
   selectNextOccurrence,
 } from './vendor/codemirror.js'
@@ -28,8 +27,8 @@ import { keymapExtension } from './codemirror-keymaps.js'
 
 /**
  * Editor controller around a CodeMirror 6 EditorView. Owns the view, its
- * extensions, and the reconfigurable compartments (editable, placeholder,
- * collab binding, undo history), and exposes a small intention-revealing API
+ * extensions, and the reconfigurable compartments (editable, keymap, collab
+ * binding, line wrapping), and exposes a small intention-revealing API
  * (content, selection, setContent, setEditable, setCollab, onChange, …) that
  * the rest of the app uses instead of reaching into CodeMirror directly. The
  * raw view is available via `.view` for transaction-level work (toolbar,
@@ -47,14 +46,16 @@ export class CodeMirrorEditor {
    * @param {object} [opts]
    * @param {Function} [opts.onCursor] - Called when the selection changes.
    * @param {Function} [opts.onChange] - Called on user (non-programmatic) edits.
+   * @param {HTMLElement} [opts.statusHost] - Element hosting the keymap status
+   *   bars (Vim's mode line, Helix's NOR indicator) instead of the editor.
    */
 
   constructor(parent, opts = {}) {
     this._parent = parent
+    this._statusHost = opts.statusHost
     this._onCursor = opts.onCursor || _noop
     this._onChange = opts.onChange || _noop
     this._editable = new Compartment()
-    this._placeholder = new Compartment()
     this._collab = new Compartment()
     this._keymap = new Compartment()
     this._wrap = new Compartment()
@@ -109,18 +110,25 @@ export class CodeMirrorEditor {
     return this._view
   }
 
+  /* Vim and Helix show their mode line in a CodeMirror bottom panel; hosting it
+     in the editor's own status bar keeps all editor state on one line. */
+
+  _panels() {
+    return this._statusHost ? panels({ bottomContainer: this._statusHost }) : []
+  }
+
   _buildState(doc) {
     return EditorState.create({
       doc,
       extensions: [
         this._keymap.of([]),
+        this._panels(),
         this._wrap.of(EditorView.lineWrapping),
         lineNumbers(),
         drawSelection(),
         foldGutter(),
         codeFolding(),
         bracketMatching(),
-        highlightSelectionMatches(),
         indentUnit.of('  '),
         EditorState.allowMultipleSelections.of(true),
         indentOnInput(),
@@ -138,7 +146,6 @@ export class CodeMirrorEditor {
           ...defaultKeymap,
         ]),
         this._editable.of(EditorView.editable.of(true)),
-        this._placeholder.of(placeholder('')),
         EditorView.updateListener.of(update => this._onUpdate(update)),
       ],
     })
@@ -235,12 +242,6 @@ export class CodeMirrorEditor {
   setEditable(editable) {
     const editableState = EditorView.editable.of(editable)
     this._view.dispatch({ effects: this._editable.reconfigure(editableState) })
-  }
-
-  /** @param {string} text - Placeholder shown when the document is empty. */
-
-  setPlaceholder(text) {
-    this._view.dispatch({ effects: this._placeholder.reconfigure(placeholder(text || '')) })
   }
 
   /** @param {boolean} hidden - Toggle the host element's `hidden` class. */

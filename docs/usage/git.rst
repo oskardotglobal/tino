@@ -3,7 +3,7 @@
 🔀 Git
 ------
 
-Every bucket is backed by a git repository.
+Every project is backed by a git repository.
 Modified files are highlighted in the file tree with a status indicator.
 
 The Git dialog
@@ -35,7 +35,7 @@ when you set one.
 Viewing history
 ~~~~~~~~~~~~~~~
 
-- **Bucket history** — open the Git dialog and switch to the **History** tab to browse all commits in the bucket.
+- **Project history** — open the Git dialog and switch to the **History** tab to browse all commits in the project.
 - **File history** — click the clock icon in the status bar (bottom of the editor) to open the same tab scoped to the current file.
 
 The History tab shows a list of commits on the left and the file tree of the selected commit on the right.
@@ -49,8 +49,8 @@ On the History tab, select a commit and a file, then click **Restore this file**
 Remotes
 ~~~~~~~
 
-A bucket can carry a single remote URL, set in its edit form (see
-:ref:`Buckets`). TINO keeps the repository's ``origin`` remote in sync with it.
+A project can carry a single remote URL, set in its edit form (see
+:ref:`Projects`). TINO keeps the repository's ``origin`` remote in sync with it.
 
 With a remote configured, the Git dialog's **Push** and **Pull** buttons become
 available to users with the **Committer** role:
@@ -66,5 +66,5 @@ available to users with the **Committer** role:
    TINO does **not** manage git credentials, and there is no per-user git
    authentication. Push and pull run as the server process and use its git
    configuration — a ``.netrc`` for HTTP(S) remotes, or an SSH key for SSH
-   remotes. Every committer of a bucket therefore pushes with the same
+   remotes. Every committer of a project therefore pushes with the same
    server-side identity.

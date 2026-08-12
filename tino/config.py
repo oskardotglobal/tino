@@ -177,7 +177,8 @@ def sanity_checks():  # pylint: disable=too-complex,too-many-branches
     """Validate all required settings on startup. Exits with code 1 if any are missing."""
     if TINO_AUTH_DISABLED:
         getLogger(__name__).warning(
-            "Authentication is disabled — ensure TINO is protected by a reverse proxy or is not publicly accessible",
+            "Authentication is disabled — ensure TINO is protected"
+            " by a reverse proxy or is not publicly accessible",
         )
 
     errors = {}
@@ -190,7 +191,9 @@ def sanity_checks():  # pylint: disable=too-complex,too-many-branches
     if not TINO_BASE_URL:
         errors["TINO_BASE_URL"] = "Set to TINO's public base URL"
     elif not TINO_BASE_URL.startswith(("https://", "http://localhost", "http://127.0.0.1")):
-        errors["TINO_BASE_URL"] = "Must start with https:// (or http://localhost / http://127.0.0.1 for development)"
+        errors["TINO_BASE_URL"] = (
+            "Must start with https:// (or http://localhost / http://127.0.0.1 for development)"
+        )
 
     if not TINO_ADMIN_GROUPS:
         errors["TINO_ADMIN_GROUPS"] = "Set to a comma-separated list of admin groups"

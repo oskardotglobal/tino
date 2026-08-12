@@ -12,7 +12,7 @@ You will be prompted for a file name, including any path prefix (e.g. ``chapters
 From template
 ~~~~~~~~~~~~~
 
-Click the **New from template** button to initialise the bucket from a Typst template.
+Click the **New from template** button to initialise the project from a Typst template.
 The dialog offers two tabs:
 
 - **Custom** — templates from the local package directory.

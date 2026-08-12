@@ -52,11 +52,11 @@ The TINO editor ships with the following features out of the box:
 - | **Real-time collaboration**
   | :ref:`Concurrent editing <Collaboration>` via CRDT over WebSockets. Changes merge automatically, no conflicts.
 - | **Group-based access control**
-  | Assign viewer, editor, or committer roles per :ref:`bucket <Buckets>`, backed by :ref:`OpenID Connect <Authentication>` group claims. 
+  | Assign viewer, editor, or committer roles per :ref:`project <Projects>`, backed by :ref:`OpenID Connect <Authentication>` group claims. 
 - | **Git versioning**
-  | Every bucket is a :ref:`Git <Git>` repository with built-in history, commits, and restore.
+  | Every project is a :ref:`Git <Git>` repository with built-in history, commits, and restore.
 - | **Drag & drop uploads**
-  | Drop :ref:`files <Files>` or ZIP archives into a bucket to import them. Archives are extracted automatically.
+  | Drop :ref:`files <Files>` or ZIP archives into a project to import them. Archives are extracted automatically.
 - | **Local packages**
   | Reusable templates and shared components as Typst :ref:`packages <Packages>`.
 - | **Custom fonts**

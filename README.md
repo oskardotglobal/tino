@@ -13,9 +13,9 @@
 |---|---|
 | ![Dark theme](screenshots/demo-dark.png) | ![Light theme](screenshots/demo-light.png) |
 
-| Bucket management | Access control |
+| Project management | Access control |
 |---|---|
-| ![Bucket list](screenshots/bucket-list.png) | ![Bucket edit](screenshots/bucket-edit.png) |
+| ![Project list](screenshots/bucket-list.png) | ![Project edit](screenshots/bucket-edit.png) |
 
 | Templates | Fonts |
 |---|---|

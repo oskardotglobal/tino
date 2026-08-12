@@ -4,7 +4,7 @@
 -----------------
 
 TINO supports local `Typst packages <https://github.com/typst/packages>`_ for
-sharing reusable libraries and templates across buckets.
+sharing reusable libraries and templates across projects.
 
 Local packages are stored in the :attr:`TINO_PACKAGE_DIR <tino.config.TINO_PACKAGE_DIR>`
 directory, which defaults to a ``packages`` sub-directory inside the
@@ -12,8 +12,8 @@ directory, which defaults to a ``packages`` sub-directory inside the
 
 .. hint::
 
-    When the package directory is inside the bucket directory (the default),
-    it shows up as a regular bucket in the TINO UI and can be edited directly.
+    When the package directory is inside the project directory (the default),
+    it shows up as a regular project in the TINO UI and can be edited directly.
 
 Package structure
 ~~~~~~~~~~~~~~~~~
@@ -48,7 +48,7 @@ package is imported.
 Using a package
 ~~~~~~~~~~~~~~~
 
-Once a package is in the package directory, any bucket can import it:
+Once a package is in the package directory, any project can import it:
 
 .. code-block:: typst
 
@@ -77,8 +77,8 @@ A package can also act as a template by adding a ``[template]`` section to
     entrypoint = "main.typ"
 
 - ``path`` is the directory containing the template files that are copied into a
-  bucket when the template is initialised.
+  project when the template is initialised.
 - ``entrypoint`` is the main ``.typ`` file inside that directory.
 
 Template packages appear in the **Local** tab of the template picker when
-creating a new bucket.
+creating a new project.

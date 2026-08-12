@@ -29,8 +29,10 @@ export class TreeActions {
     if (!confirm(`Delete "${filePath}"?`))
       return
 
-    if (this.app.currentFile === filePath)
-      this.app.editor.closeTab(filePath)
+    /* Close the tab whether or not the file is the active one: a deleted file
+       must not stay open in a background tab either. */
+
+    this.app.editor.closeTab(filePath)
     await this.app.api.deleteFile(
       this.app.bucket, filePath,
     )
@@ -43,8 +45,7 @@ export class TreeActions {
     if (!name || name.trim() === filePath)
       return
 
-    if (this.app.currentFile === filePath)
-      this.app.editor.closeTab(filePath)
+    this.app.editor.closeTab(filePath)
     await this.app.api.renameFile(
       this.app.bucket, filePath, name.trim(),
     )

@@ -28,6 +28,8 @@
 
 /* Dark theme */
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --bg-primary: var(--cd-cold-grey-10);
   --bg-secondary: var(--cd-cold-grey-20);
   --bg-tertiary: var(--cd-cold-grey-30);
@@ -53,6 +55,8 @@
 
 /* Light theme */
 [data-theme="light"] {
+  color-scheme: light;
+
   --bg-primary: var(--cd-cold-grey-100);
   --bg-secondary: var(--cd-white);
   --bg-tertiary: var(--cd-cold-grey-90);
@@ -245,6 +249,22 @@ html, body {
   display: flex;
   height: calc(100vh - var(--toolbar-height));
   overflow: hidden;
+}
+
+.editor-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--editor-bg);
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.editor-empty.hidden {
+  display: none;
 }
 
 /*
@@ -572,6 +592,11 @@ html, body {
   flex: 1;
   background: var(--editor-bg);
   min-width: 200px;
+
+  /* CodeMirror's panels (the Vim and Helix status bars) ship with z-index 300,
+     which would otherwise float them above the dialog overlays and out of their
+     backdrop blur. An own stacking context keeps them local to the editor. */
+  isolation: isolate;
 }
 
 .tab-bar {
@@ -764,20 +789,22 @@ html, body {
   border-left-color: var(--text-primary);
 }
 
-/* Vim block cursor: brand accent instead of the package's hardcoded pink. */
-.editor .cm-fat-cursor {
-  background: var(--accent) !important;
+/* Modal block cursors (Vim's fat cursor, Helix's mark) — a neutral block, so
+   the caret never competes with the accent used for real selections. */
+.editor .cm-fat-cursor,
+.editor .cm-hx-block-cursor .cm-hx-cursor {
+  background: var(--text-secondary) !important;
 }
 
-/* Vim status bar (mode / : command line). */
-.editor .cm-vim-panel {
-  font-family: var(--font-mono);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
+/*
+ * Helix keeps a selection alive at all times, and a line-wise one paints to the
+ * right edge of the viewport. In accent orange that reads as "this whole line is
+ * highlighted", so the selection is toned down to a neutral while Helix's normal
+ * mode is active (it puts cm-hx-block-cursor on the scroller).
+ */
 
-.editor .cm-vim-panel input {
-  color: var(--text-primary);
+.editor .cm-hx-block-cursor .cm-selectionBackground {
+  background: var(--bg-hover) !important;
 }
 
 /*
@@ -788,11 +815,6 @@ html, body {
  */
 .editor .cm-selectionBackground {
   background: var(--selection) !important;
-}
-
-.editor .cm-selectionMatch {
-  background: var(--bg-hover);
-  outline: 1px solid var(--border-light);
 }
 
 .editor .cm-matchingBracket,
@@ -918,12 +940,19 @@ html, body {
   font-style: italic;
 }
 
-.cm-typst-keyword {
+.cm-typst-keyword,
+.cm-typst-atom {
   font-weight: 500;
 }
 
+/* Headings keep the text colour and gain weight, like Typst's own editor;
+   the `=` markers carry the colour instead. */
 .cm-typst-heading {
   font-weight: 700;
+}
+
+.cm-typst-marker {
+  font-weight: 500;
 }
 
 .cm-typst-strong {
@@ -938,33 +967,53 @@ html, body {
   text-decoration: underline;
 }
 
-/* Dark theme tokens: brighter brand steps for the dark editor background. */
+/* Dark theme: brand steps mapped onto Typst's own editor palette, brightened
+   for the dark editor background. */
 
 [data-theme="dark"] .cm-typst-comment { color: var(--cd-cold-grey-50); }
-[data-theme="dark"] .cm-typst-string { color: var(--cd-sea-green-60); }
-[data-theme="dark"] .cm-typst-keyword { color: var(--cd-violet-60); }
-[data-theme="dark"] .cm-typst-function { color: var(--cd-azure-60); }
-[data-theme="dark"] .cm-typst-variable { color: var(--cd-blue-60); }
-[data-theme="dark"] .cm-typst-number { color: var(--cd-orange-70); }
-[data-theme="dark"] .cm-typst-heading { color: var(--cd-yellow-70); }
-[data-theme="dark"] .cm-typst-meta { color: var(--cd-fuchsia-60); }
-[data-theme="dark"] .cm-typst-label { color: var(--cd-blue-60); }
-[data-theme="dark"] .cm-typst-link { color: var(--cd-azure-60); }
-[data-theme="dark"] .cm-typst-punct { color: var(--cd-cold-grey-60); }
+[data-theme="dark"] .cm-typst-string { color: var(--cd-green-60); }
+[data-theme="dark"] .cm-typst-raw { color: var(--cd-cold-grey-60); }
 
-/* Light theme tokens: darker brand steps for contrast on the light background. */
+[data-theme="dark"] .cm-typst-keyword,
+[data-theme="dark"] .cm-typst-atom { color: var(--cd-red-60); }
+[data-theme="dark"] .cm-typst-operator { color: var(--cd-red-60); }
+[data-theme="dark"] .cm-typst-function { color: var(--cd-blue-60); }
+[data-theme="dark"] .cm-typst-variable { color: var(--cd-azure-60); }
+[data-theme="dark"] .cm-typst-property { color: var(--cd-azure-70); }
+[data-theme="dark"] .cm-typst-number { color: var(--cd-fuchsia-60); }
+[data-theme="dark"] .cm-typst-marker { color: var(--cd-purple-60); }
+[data-theme="dark"] .cm-typst-escape { color: var(--cd-sea-green-60); }
+
+[data-theme="dark"] .cm-typst-label,
+[data-theme="dark"] .cm-typst-ref { color: var(--cd-sea-green-60); }
+[data-theme="dark"] .cm-typst-link { color: var(--cd-sea-green-60); }
+
+[data-theme="dark"] .cm-typst-punct,
+[data-theme="dark"] .cm-typst-bracket { color: var(--cd-cold-grey-60); }
+
+/* Light theme: the same mapping, darkened for contrast on the light
+   background. */
 
 [data-theme="light"] .cm-typst-comment { color: var(--cd-cold-grey-50); }
-[data-theme="light"] .cm-typst-string { color: var(--cd-sea-green-40); }
-[data-theme="light"] .cm-typst-keyword { color: var(--cd-violet-40); }
-[data-theme="light"] .cm-typst-function { color: var(--cd-azure-40); }
-[data-theme="light"] .cm-typst-variable { color: var(--cd-blue-40); }
-[data-theme="light"] .cm-typst-number { color: var(--cd-orange-40); }
-[data-theme="light"] .cm-typst-heading { color: var(--cd-yellow-50); }
-[data-theme="light"] .cm-typst-meta { color: var(--cd-fuchsia-40); }
-[data-theme="light"] .cm-typst-label { color: var(--cd-blue-40); }
-[data-theme="light"] .cm-typst-link { color: var(--cd-azure-40); }
-[data-theme="light"] .cm-typst-punct { color: var(--cd-cold-grey-40); }
+[data-theme="light"] .cm-typst-string { color: var(--cd-green-30); }
+[data-theme="light"] .cm-typst-raw { color: var(--cd-cold-grey-40); }
+
+[data-theme="light"] .cm-typst-keyword,
+[data-theme="light"] .cm-typst-atom { color: var(--cd-red-40); }
+[data-theme="light"] .cm-typst-operator { color: var(--cd-red-40); }
+[data-theme="light"] .cm-typst-function { color: var(--cd-blue-40); }
+[data-theme="light"] .cm-typst-variable { color: var(--cd-azure-30); }
+[data-theme="light"] .cm-typst-property { color: var(--cd-azure-40); }
+[data-theme="light"] .cm-typst-number { color: var(--cd-fuchsia-40); }
+[data-theme="light"] .cm-typst-marker { color: var(--cd-purple-40); }
+[data-theme="light"] .cm-typst-escape { color: var(--cd-sea-green-30); }
+
+[data-theme="light"] .cm-typst-label,
+[data-theme="light"] .cm-typst-ref { color: var(--cd-sea-green-30); }
+[data-theme="light"] .cm-typst-link { color: var(--cd-sea-green-30); }
+
+[data-theme="light"] .cm-typst-punct,
+[data-theme="light"] .cm-typst-bracket { color: var(--cd-cold-grey-40); }
 
 .binary-preview {
   flex: 1;
@@ -1028,6 +1077,58 @@ html, body {
 
 #status-bar-modified {
   margin-left: auto;
+}
+
+/*
+ * Vim and Helix render their mode line into a CodeMirror bottom panel, which
+ * the editor hands to #keymap-status (see codemirror-editor.js). The panel
+ * chrome is stripped here so the mode reads as one more status-bar field.
+ */
+
+.keymap-status {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.keymap-status:empty {
+  display: none;
+}
+
+.keymap-status .cm-panels,
+.keymap-status .cm-panel,
+.keymap-status .cm-hx-status-panel {
+  display: flex;
+  position: static;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Helix reports the caret position too; the status bar already shows it. */
+.keymap-status .cm-hx-status-panel span:last-child {
+  display: none;
+}
+
+.keymap-status .cm-vim-panel {
+  min-height: 0;
+}
+
+.status-bar .keymap-status .cm-panel > input {
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
 }
 
 .status-btn {
@@ -1454,6 +1555,20 @@ html, body {
 .settings-input {
   width: 200px;
   flex: none;
+}
+
+/* A select keeps the UA's own control colours while it renders with the native
+   appearance, which washes the label out against our themed background. Drawing
+   the arrow ourselves puts the text back under our control. */
+select.settings-input {
+  appearance: none;
+  padding-right: 26px;
+  background-image: linear-gradient(45deg, transparent 50%, currentcolor 50%),
+    linear-gradient(135deg, currentcolor 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
 }
 
 .settings-input-narrow {
