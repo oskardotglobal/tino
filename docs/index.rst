@@ -47,7 +47,7 @@ Content
    :caption: Usage
 
    usage/authentication
-   usage/buckets
+   usage/projects
    usage/files
    usage/editor
    usage/collaboration

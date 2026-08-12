@@ -4,7 +4,7 @@
 ----------------
 
 TINO edits are collaborative in real time. When two or more people open the
-same file in a bucket, their changes are merged live and everyone works on the
+same file in a project, their changes are merged live and everyone works on the
 same document as it evolves.
 
 How it works
@@ -17,7 +17,7 @@ and no manual conflict resolution. When the last participant closes the file, it
 content is flushed to disk.
 
 Live editing is available to users with **editor** or **committer** access to a
-bucket; viewers open files as a read-only copy.
+project; viewers open files as a read-only copy.
 
 Presence
 ~~~~~~~~

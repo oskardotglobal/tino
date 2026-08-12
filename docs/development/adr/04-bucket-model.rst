@@ -13,6 +13,12 @@ Decision
 --------
 
 Documents are organised into **buckets** — named, isolated workspaces.
+
+.. note::
+
+   The web UI and the user documentation call them :ref:`projects <Projects>`.
+   The API, the on-disk layout and the code keep the original term.
+
 Each bucket is an independent git repository with its own file tree, commit history, and access control list.
 Users switch between buckets explicitly; there is no global file tree spanning multiple buckets.
 

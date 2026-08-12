@@ -15,7 +15,7 @@ To sign out, click the **Logout** button in the top-right corner of the toolbar.
 
 .. seealso::
 
-    Also have a look at the :ref:`Access control <usage/buckets:Access control>`, and :ref:`OIDC integration <operations/deployment:oidc>`.
+    Also have a look at the :ref:`Access control <usage/projects:Access control>`, and :ref:`OIDC integration <operations/deployment:oidc>`.
 
 Profile
 -------
@@ -49,7 +49,7 @@ Creating a key
 
 Administrators manage keys from the **settings** icon in the toolbar, via **Manage** next to **API keys**.
 
-Click **New Key**, give it a descriptive label, and add one row per bucket and :ref:`role <usage/buckets:Access control>` the key may access.
+Click **New Key**, give it a descriptive label, and add one row per project and :ref:`role <usage/projects:Access control>` the key may access.
 
 .. important::
 
@@ -66,7 +66,7 @@ Send the token in the ``Authorization`` header of every request:
     $ curl -H "Authorization: Bearer tino_…" \
         https://tino.example.com/api/buckets/<slug>/files
 
-A key can only reach the buckets it was granted, with exactly the assigned role — independent of any OIDC group — and can never act as an administrator.
+A key can only reach the projects it was granted, with exactly the assigned role — independent of any OIDC group — and can never act as an administrator.
 
 Revoking a key
 ~~~~~~~~~~~~~~

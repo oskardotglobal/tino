@@ -1,26 +1,26 @@
-.. _Buckets:
+.. _Projects:
 
-🪣 Buckets
-----------
+📁 Projects
+-----------
 
-Documents are organised into **buckets**.
-Each bucket is a self-contained git repository that holds one or more (Typst) files.
+Documents are organised into **projects**.
+Each project is a self-contained git repository that holds one or more (Typst) files.
 
 .. note::
 
-   The web UI calls buckets **projects**. The API, the on-disk layout, and this
-   documentation keep the original term.
+   Projects are called *buckets* in the REST API, on disk, and in the Python
+   code. Only the wording differs — see :ref:`ADR-04`.
 
-Selecting a bucket
+Selecting a project
+~~~~~~~~~~~~~~~~~~~
+
+Click the project button in the toolbar (top-left) to open the project picker.
+Select a project from the list to load its files into the editor.
+
+Creating a project
 ~~~~~~~~~~~~~~~~~~
 
-Click the project button in the toolbar (top-left) to open the picker.
-Select a bucket from the list to load its files into the editor.
-
-Creating a bucket
-~~~~~~~~~~~~~~~~~
-
-Administrators can create new buckets from the picker dialog.
+Administrators can create new projects from the project picker dialog.
 Click **New Project**, fill in a slug (the unique identifier) and an optional description, then save.
 
 The same form holds the optional **Remote URL** used by
@@ -29,8 +29,9 @@ The same form holds the optional **Remote URL** used by
 Access control
 ~~~~~~~~~~~~~~
 
-Each bucket has its own access control list.
+Each project has its own access control list.
 Entries map an OIDC group to one of three roles:
+
 
 .. list-table::
    :header-rows: 1
@@ -47,4 +48,4 @@ Entries map an OIDC group to one of three roles:
 
 .. note::
 
-  Members of the configured admin groups (see :attr:`TINO_ADMIN_GROUPS <tino.config.TINO_ADMIN_GROUPS>`) are implicitly treated as **Committer** on every bucket.
+  Members of the configured admin groups (see :attr:`TINO_ADMIN_GROUPS <tino.config.TINO_ADMIN_GROUPS>`) are implicitly treated as **Committer** on every project.

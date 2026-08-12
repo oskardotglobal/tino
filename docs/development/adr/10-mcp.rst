@@ -35,7 +35,7 @@ They discover an authorization server and obtain a ``client_id`` through one of 
 Decision
 --------
 
-TINO embeds the MCP server in the main FastAPI process as a Streamable HTTP sub-application mounted at ``/mcp``, reusing the existing :ref:`services <Architecture>` and :ref:`access model <usage/buckets:Access control>`.
+TINO embeds the MCP server in the main FastAPI process as a Streamable HTTP sub-application mounted at ``/mcp``, reusing the existing :ref:`services <Architecture>` and :ref:`access model <usage/projects:Access control>`.
 
 For authentication, TINO acts as an **OAuth 2.0 Resource Server** and delegates authentication entirely to the same `OpenID Connect <https://openid.net/developers/how-connect-works/>`_ provider used for the web UI (:ref:`ADR-07`).
 Authorization and the per-bucket access model (:ref:`ADR-04`) remains TINO's.

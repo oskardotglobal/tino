@@ -128,12 +128,13 @@ Open the **settings** icon in the toolbar and pick a **Keybindings** mode:
    * - Default
      - Plain CodeMirror keybindings — no modal editing.
    * - Vim
-     - `Vim <https://www.vim.org/>`_ keybindings. A status bar at the bottom of
-       the editor shows the current mode and ``:`` command line, and the caret
-       becomes a block cursor in normal mode.
+     - `Vim <https://www.vim.org/>`_ keybindings. The editor's status bar shows
+       the current mode and the ``:`` command line, and the caret becomes a
+       block cursor in normal mode.
    * - Helix
      - `Helix <https://helix-editor.com/>`_ keybindings, with its
-       selection-first editing model.
+       selection-first editing model. The current mode is shown in the editor's
+       status bar as well.
 
 Only one mode is active at a time, and the choice is remembered per browser.
 In both modal modes the usual motions and operators apply, and ``u`` /

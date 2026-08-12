@@ -77,7 +77,7 @@ A typical editing session follows this flow:
         Browser->>FastAPI: GET /oidc/login
         FastAPI-->>Browser: redirect → OIDC provider → session cookie
 
-        User->>Browser: select bucket
+        User->>Browser: select project
         Browser->>FastAPI: GET /api/buckets
         FastAPI->>FS: list bucket dirs
         FastAPI-->>Browser: bucket list
