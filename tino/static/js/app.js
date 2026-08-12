@@ -100,6 +100,7 @@ class TinoApp {
     applyRoleVisibility(this)
     this.config = await this.api.config()
     this._setLogoVersionTooltip()
+    this._bindLogoRepoLink()
     await this.reloadUser()
     await this.fileTree.loadBuckets()
     await this._applyRoute(route, true)
@@ -117,6 +118,21 @@ class TinoApp {
     const title = document.createElementNS(ns, 'title')
     title.textContent = `TINO v${this.config.version}`
     this.els.logo.replaceChildren(title, ...this.els.logo.childNodes)
+  }
+
+  /**
+   * Open the configured source repository (TINO_REPO_URL) in a new tab when
+   * the logo is clicked. Without a configured URL the logo stays inert.
+   */
+
+  _bindLogoRepoLink() {
+    const url = this.config.repoUrl
+    if (!url)
+      return
+    this.els.logo.classList.add('clickable')
+    this.els.logo.addEventListener('click', () => {
+      window.open(url, '_blank', 'noopener')
+    })
   }
 
   _bindAll() {

@@ -14,6 +14,14 @@ Accent colour
 
 The instance-wide accent colour is configured by the administrator via the :attr:`TINO_ACCENT_COLOUR <tino.config.TINO_ACCENT_COLOUR>` environment variable.
 
+Logo link
+~~~~~~~~~
+
+Clicking the TINO logo in the toolbar opens the source repository in a new tab.
+Administrators can point it at a fork or an internal mirror via the
+:attr:`TINO_REPO_URL <tino.config.TINO_REPO_URL>` environment variable, or set
+that variable to an empty value to make the logo inert.
+
 Editor colours
 ~~~~~~~~~~~~~~
 

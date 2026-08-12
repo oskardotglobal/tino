@@ -132,6 +132,11 @@ html, body {
   display: block;
 }
 
+/* Set once the logo links to the configured source repository. */
+.logo.clickable {
+  cursor: pointer;
+}
+
 .material-symbols-outlined {
   font-size: 22px;
   display: inline-block;
