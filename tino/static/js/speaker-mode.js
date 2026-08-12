@@ -32,9 +32,17 @@ const POPUP_HTML = `<!doctype html>
          cursor: pointer; }
   #slide { height: 100%; width: auto; max-width: 100%; background: #ffffff; }
   #slide svg { display: block; width: 100%; height: 100%; }
+  #fs-btn { position: fixed; top: 12px; right: 12px; padding: 4px 8px;
+            font-size: 18px; line-height: 1; color: #ffffff; opacity: 0.25;
+            background: rgba(0, 0, 0, 0.6); border: 1px solid #ffffff;
+            border-radius: 4px; cursor: pointer; transition: opacity 0.15s; }
+  #fs-btn:hover { opacity: 1; }
 </style>
 </head>
-<body><div id="slide"></div></body>
+<body>
+<div id="slide"></div>
+<button id="fs-btn" title="Fullscreen" type="button">&#9974;</button>
+</body>
 </html>`
 
 export class SpeakerMode {
@@ -65,7 +73,7 @@ export class SpeakerMode {
   bind() {
     this._pauseBtn.addEventListener('click', () => this._togglePause())
     document.getElementById('btn-speaker-lap')
-      .addEventListener('click', () => this.clock.lap())
+      .addEventListener('click', () => this._lap())
     document.getElementById('btn-speaker-reset')
       .addEventListener('click', () => this.clock.reset())
     this._view.addEventListener('click', evt => this._onViewClick(evt))
@@ -157,6 +165,12 @@ export class SpeakerMode {
     this._next.innerHTML = '<p class="speaker-end">End of deck</p>'
   }
 
+  /** Record a lap for the slide on screen. */
+
+  _lap() {
+    this.clock.lap(`Slide ${this._index + SINGLE_ITEM}`)
+  }
+
   _togglePause() {
     this.clock.toggle()
     this._syncPauseBtn()
@@ -187,9 +201,35 @@ export class SpeakerMode {
     win.document.write(POPUP_HTML)
     win.document.close()
     this._popupSlide = win.document.getElementById('slide')
-    win.document.addEventListener('keydown', evt => this._onKey(evt))
-    win.document.addEventListener('click', () => this.next())
+    this._bindPopup(win.document)
     return win
+  }
+
+  /** Wire slide navigation and the fullscreen toggle inside the popup. */
+
+  _bindPopup(doc) {
+    doc.addEventListener('keydown', evt => this._onKey(evt))
+    doc.addEventListener('click', () => this.next())
+    doc.getElementById('fs-btn').addEventListener('click', evt => {
+      // Without this the toggle click would also advance the deck.
+      evt.stopPropagation()
+      this._togglePopupFullscreen(doc)
+    })
+  }
+
+  /**
+   * Put the audience window into fullscreen, or leave it again. The popup owns
+   * its own fullscreen session, so the editor window keeps the speaker view.
+   */
+
+  _togglePopupFullscreen(doc) {
+    if (doc.fullscreenElement) {
+      doc.exitFullscreen()
+      return
+    }
+    const request = doc.documentElement.requestFullscreen()
+    if (request)
+      request.catch(err => this.app.toast.error(err.message))
   }
 
   _closePopup() {

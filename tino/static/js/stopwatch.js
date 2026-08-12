@@ -29,6 +29,7 @@ export class Stopwatch {
     this._elapsed = 0
     this._startedAt = null
     this._timer = null
+    this._lastLap = null
   }
 
   /** Whether the clock is currently running. */
@@ -83,18 +84,40 @@ export class Stopwatch {
     this._elapsed = 0
     if (this.running)
       this._startedAt = Date.now()
-    this._laps.replaceChildren()
+    this._clearLaps()
     this._render()
   }
 
-  /** Record the current time as a lap. */
+  /**
+   * Record the current time against a label (the slide being presented).
+   * Lapping the same label again only refreshes that lap's time, so repeatedly
+   * hitting the button on one slide never piles up duplicate entries.
+   *
+   * @param {string} label - Identifies what is being timed, e.g. 'Slide 3'.
+   */
 
-  lap() {
+  lap(label) {
+    const time = Stopwatch.format(this.elapsed)
+    if (this._lastLap && this._lastLap.dataset.label === label) {
+      this._lastLap.querySelector('.speaker-lap-time').textContent = time
+      return
+    }
+    this._lastLap = Stopwatch._buildLap(label, time)
+    this._laps.append(this._lastLap)
+    this._laps.scrollTop = this._laps.scrollHeight
+  }
+
+  static _buildLap(label, time) {
     const item = document.createElement('li')
     item.className = 'speaker-lap'
-    item.textContent = Stopwatch.format(this.elapsed)
-    this._laps.append(item)
-    this._laps.scrollTop = this._laps.scrollHeight
+    item.dataset.label = label
+    const name = document.createElement('span')
+    name.textContent = label
+    const stamp = document.createElement('span')
+    stamp.className = 'speaker-lap-time'
+    stamp.textContent = time
+    item.append(name, stamp)
+    return item
   }
 
   /** Stop the clock and clear all recorded state. */
@@ -102,8 +125,13 @@ export class Stopwatch {
   clear() {
     this.pause()
     this._elapsed = 0
-    this._laps.replaceChildren()
+    this._clearLaps()
     this._render()
+  }
+
+  _clearLaps() {
+    this._laps.replaceChildren()
+    this._lastLap = null
   }
 
   /** Format a duration in milliseconds as HH:MM:SS. */
