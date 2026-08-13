@@ -1,14 +1,14 @@
-import { SINGLE_ITEM, escapeHtml } from './constants.js'
+import { SINGLE_ITEM } from './constants.js'
 
 /**
  * Compiler diagnostics: errors and warnings reported by the Typst CLI.
  *
- * Diagnostics belong to a file, not to the preview — a broken import shows up
- * in the file that declares it, which may not even be open. They are therefore
- * kept per path, pushed into the editor whenever that file is on screen, and
- * summarised in a banner above the preview whose entries jump to the offending
- * line. The preview itself keeps the last successful render, dimmed while it is
- * known to be out of date.
+ * Diagnostics belong to a file, not to the preview — a broken import is reported
+ * against the file that declares it, which may not be the one on screen. They
+ * are therefore kept per path and shown in two places: on the offending line of
+ * the editor, and as a mark on the file in the explorer, which is how a problem
+ * in a file nobody has open becomes visible at all. The preview itself only keeps
+ * its last successful render, dimmed while it is known to be out of date.
  */
 
 export class DiagnosticsManager {
@@ -18,20 +18,6 @@ export class DiagnosticsManager {
   constructor(app) {
     this.app = app
     this._byPath = new Map()
-    this._banner = document.getElementById('preview-diagnostics')
-  }
-
-  /** Bind the banner's jump-to-error links. */
-
-  bind() {
-    this._banner.addEventListener('click', evt => this._onClick(evt))
-  }
-
-  /** @returns {boolean} Whether the last compilation reported an error. */
-
-  get hasErrors() {
-    return [...this._byPath.values()]
-      .some(list => list.some(diag => diag.severity === 'error'))
   }
 
   /**
@@ -41,8 +27,8 @@ export class DiagnosticsManager {
 
   set(diagnostics) {
     this._byPath = DiagnosticsManager._group(diagnostics || [])
-    this._render()
     this.apply()
+    this.mark()
   }
 
   /** Drop all diagnostics, e.g. when switching projects. */
@@ -63,7 +49,45 @@ export class DiagnosticsManager {
     editor.setDiagnostics(this._byPath.get(path) || [])
   }
 
+  /**
+   * Mark the files that have errors in the explorer. Called after every
+   * compilation, and by the file tree after it re-renders (which drops the
+   * marks with the rest of the DOM).
+   */
+
+  mark() {
+    const tree = this.app.els.fileTree
+
+    if (!tree)
+      return
+
+    tree.querySelectorAll('.file-item').forEach(item => {
+      DiagnosticsManager._markItem(item, this._errorsIn(item.dataset.file))
+    })
+  }
+
   // ── Internal ──
+
+  /** The errors — not the warnings — reported against one file. */
+
+  _errorsIn(path) {
+    return (this._byPath.get(path) || [])
+      .filter(diag => diag.severity === 'error')
+  }
+
+  static _markItem(item, errors) {
+    item.classList.toggle('file-errors', errors.length > 0)
+
+    if (!errors.length) {
+      item.removeAttribute('title')
+      return
+    }
+
+    const [first] = errors
+    const summary = `${errors.length} errors`
+
+    item.title = errors.length === SINGLE_ITEM ? first.message.split('\n')[0] : summary
+  }
 
   static _group(diagnostics) {
     const grouped = new Map()
@@ -75,64 +99,6 @@ export class DiagnosticsManager {
     })
 
     return grouped
-  }
-
-  _render() {
-    const entries = [...this._byPath.entries()]
-      .flatMap(([path, list]) => list.map(diag => ({ ...diag, path })))
-    const known = this.app.fileTree.filePaths || new Set()
-    this._banner.classList.toggle('hidden', entries.length === 0)
-    this._banner.innerHTML = entries
-      .map(diag => DiagnosticsManager._entryHtml(diag, known.has(diag.path)))
-      .join('')
-  }
-
-  /* Only diagnostics pointing at a file of the bucket become jump links —
-     Typst also reports errors from package sources, which cannot be opened. */
-
-  static _entryHtml(diag, openable) {
-    const where = DiagnosticsManager._whereHtml(diag)
-    const attrs = DiagnosticsManager._linkAttrs(diag, openable)
-
-    return (
-      `<div class="diagnostic diagnostic-${diag.severity}"${attrs}>${where}` +
-      `<span class="diagnostic-message">${escapeHtml(diag.message)}</span>` +
-      '</div>'
-    )
-  }
-
-  /** The `file.typ:12` label a diagnostic is prefixed with, if it has one. */
-
-  static _whereHtml(diag) {
-    if (!diag.path)
-      return ''
-    const line = diag.line ? `:${diag.line}` : ''
-
-    return `<span class="diagnostic-where">${escapeHtml(diag.path)}${line}</span>`
-  }
-
-  static _linkAttrs(diag, openable) {
-    if (!openable)
-      return ''
-
-    return (
-      ` data-path="${escapeHtml(diag.path)}"` +
-      ` data-line="${diag.line || SINGLE_ITEM}"`
-    )
-  }
-
-  async _onClick(evt) {
-    const entry = evt.target.closest('.diagnostic[data-path]')
-
-    if (!entry)
-      return
-
-    const { line, path } = entry.dataset
-
-    if (path !== this.app.currentFile)
-      await this.app.editor.openFile(path)
-
-    this.app.els.editor.setCursor(Number(line))
   }
 
 }

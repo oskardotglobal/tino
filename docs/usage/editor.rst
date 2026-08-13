@@ -281,16 +281,17 @@ Compiler errors
 ~~~~~~~~~~~~~~~
 
 Errors and warnings are reported **where they happen**: underlined in the editor
-on the offending line, with the message on hover and a marker in the gutter.
-They are also listed above the preview — including the ones in files you do not
-have open, such as an imported template — and clicking an entry jumps straight
-to that file and line.
+on the offending line, with the message on hover and a marker in the gutter. They
+come from the compiler itself, which runs on every change.
+
+A diagnostic belongs to the file that causes it, which is not always the one on
+screen — an error in an imported template is reported against the template. Files
+the compiler found errors in are marked in the file explorer, so a problem
+outside the open file is still visible; hovering the mark shows the message.
 
 A document that does not compile never empties the preview: the last successful
-render stays on screen, dimmed, until the next one succeeds.
-
-Every error and warning comes from the compiler itself, which runs on each
-change — there is no second opinion to reconcile it with.
+render stays on screen, dimmed, until the next one succeeds. The preview shows no
+error text of its own.
 
 Long documents
 ~~~~~~~~~~~~~~

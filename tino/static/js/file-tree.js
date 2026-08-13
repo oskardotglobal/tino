@@ -78,14 +78,14 @@ export class FileTree {
   /** Re-render the tree, applying the current search filter. */
 
   _renderTree() {
-    const query = this.app.els.fileSearch.value
-      .trim().toLowerCase()
+    const query = this.app.els.fileSearch.value.trim().toLowerCase()
     const collapsed = query ? new Set() : this._getCollapsedPaths()
     const nodes = FileTree._filterNodes(this._nodes, query)
     const tree = this.app.els.fileTree
     this._canEditCached = this._canEdit()
     tree.innerHTML = ''
     this._renderNodes(tree, nodes, collapsed)
+    this.app.diagnostics.mark()
   }
 
   /** Recursively keep only nodes whose path matches the query. */

@@ -136,7 +136,6 @@ class TinoApp {
     this._bindFileTree()
     this._bindDialogs()
     this.preview.bindZoom()
-    this.diagnostics.bind()
     this.presentation.bind()
     this.speaker.bind()
   }
