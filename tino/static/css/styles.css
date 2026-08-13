@@ -462,6 +462,21 @@ html, body {
   opacity: 1;
 }
 
+/* A file the compiler reported errors in (see diagnostics.js). The dot sits
+   after the name, where it survives the hover actions sliding in. */
+
+.file-item.file-errors {
+  color: var(--cd-red-50);
+}
+
+.file-item.file-errors::after {
+  content: "\25cf";
+  margin-left: 2px;
+  color: var(--cd-red-50);
+  font-size: 9px;
+  line-height: 1;
+}
+
 /* Git status badges (commit dialog) */
 .git-badge {
   font-size: 14px;
@@ -1446,56 +1461,6 @@ html, body {
 
 .preview-outdated {
   opacity: 0.45;
-}
-
-/* ── Compiler diagnostics ── */
-
-.preview-diagnostics {
-  flex-shrink: 0;
-  max-height: 30%;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-secondary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-
-.preview-diagnostics.hidden {
-  display: none;
-}
-
-.diagnostic {
-  display: flex;
-  gap: 8px;
-  padding: 6px 10px;
-  border-left: 3px solid transparent;
-  white-space: pre-wrap;
-}
-
-.diagnostic-error {
-  border-left-color: var(--cd-red-50);
-}
-
-.diagnostic-warning {
-  border-left-color: var(--cd-yellow-60);
-}
-
-.diagnostic[data-path] {
-  cursor: pointer;
-}
-
-.diagnostic[data-path]:hover {
-  background: var(--bg-hover);
-}
-
-.diagnostic-where {
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.diagnostic-message {
-  color: var(--text-primary);
 }
 
 .preview-error {
