@@ -4,10 +4,12 @@ import {
   EditorState,
   EditorView,
   diagnosticCount,
+  forceLinting,
   panels,
 } from './vendor/codemirror.js'
-import { editorExtensions, lintExtension } from './codemirror-extensions.js'
+import { mergeDiagnostics, toEditorDiagnostics } from './codemirror-diagnostics.js'
 import { SINGLE_ITEM } from './constants.js'
+import { editorExtensions } from './codemirror-extensions.js'
 import { keymapExtension } from './codemirror-keymaps.js'
 
 /**
@@ -42,11 +44,12 @@ export class CodeMirrorEditor {
     this._onCursor = opts.onCursor || _noop
     this._onChange = opts.onChange || _noop
     this._onFormat = opts.onFormat || _noop
+    this._compiled = []
+    this._liveSource = null
     this._parts = {
       collab: new Compartment(),
       editable: new Compartment(),
       keymap: new Compartment(),
-      lint: new Compartment(),
       wrap: new Compartment(),
     }
     this._view = new EditorView({
@@ -67,16 +70,15 @@ export class CodeMirrorEditor {
   }
 
   /**
-   * Bind or unbind the diagnostics source that underlines errors in the
-   * document. CodeMirror polls it after edits, debounced.
+   * Bind or unbind the live diagnostics source (the language server). It is
+   * merged with the compiler's diagnostics into the single set the editor shows.
    * @param {Function|null} source - `view => Promise<Diagnostic[]>`, or null to
-   *   turn error detection off.
+   *   leave the editor with the compiler's diagnostics alone.
    */
 
   setLintSource(source) {
-    this._view.dispatch({
-      effects: this._parts.lint.reconfigure(lintExtension(source)),
-    })
+    this._liveSource = source
+    forceLinting(this._view)
   }
 
   /** @returns {number} How many diagnostics the document currently has. */
@@ -125,11 +127,26 @@ export class CodeMirrorEditor {
       doc,
       extensions: editorExtensions({
         compartments: this._parts,
+        lintSource: view => this._lint(view),
         onFormat: () => this._onFormat(),
         onUpdate: update => this._onUpdate(update),
         panelExt: this._panels(),
       }),
     })
+  }
+
+  /*
+   * The editor shows one set of diagnostics from two sources: the compiler's,
+   * pushed in from the last compilation, and the language server's, fetched for
+   * the buffer as it stands. Both are resolved against the current document on
+   * every lint pass, so positions follow edits made since either was produced.
+   */
+
+  async _lint(view) {
+    const compiled = toEditorDiagnostics(view.state, this._compiled)
+    const live = this._liveSource ? await this._liveSource(view) : []
+
+    return mergeDiagnostics(view.state, live, compiled)
   }
 
   _onUpdate(update) {
@@ -171,44 +188,15 @@ export class CodeMirrorEditor {
   }
 
   /**
-   * Replace the document with new text as an ordinary edit: the change is
-   * reported (so the file is marked dirty and saved) and propagates over
-   * collaboration. Only the differing middle section is replaced, so the caret,
-   * the remote cursors and the undo history all survive a reformat of a part of
-   * the document.
-   * @param {string} text - The new document content.
-   * @returns {boolean} True when the document changed.
+   * Show the compiler's diagnostics inline: an underlined range with a hover
+   * message plus a marker in the gutter. They are re-applied on every lint pass
+   * until the next compilation replaces them.
+   * @param {Array<object>} diagnostics - Compiler diagnostics for this file.
    */
 
-  replaceText(text) {
-    const current = this.content
-    if (text === current)
-      return false
-    const change = CodeMirrorEditor._minimalChange(current, text)
-    this._view.dispatch({ changes: change })
-    return true
-  }
-
-  /* Narrow a whole-document rewrite down to the span that actually differs, by
-     skipping the common prefix and the common suffix. */
-
-  static _minimalChange(current, text) {
-    const max = Math.min(current.length, text.length)
-    let start = 0
-    while (start < max && current[start] === text[start])
-      start += SINGLE_ITEM
-    let trail = 0
-    while (
-      trail < max - start
-      && current[current.length - trail - SINGLE_ITEM]
-        === text[text.length - trail - SINGLE_ITEM]
-    )
-      trail += SINGLE_ITEM
-    return {
-      from: start,
-      insert: text.slice(start, text.length - trail),
-      to: current.length - trail,
-    }
+  setDiagnostics(diagnostics) {
+    this._compiled = diagnostics || []
+    forceLinting(this._view)
   }
 
   /** @returns {{from: number, to: number}} The main selection range. */

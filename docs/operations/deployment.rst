@@ -126,7 +126,7 @@ Prerequisites
 - `typstyle <https://github.com/typstyle-rs/typstyle>`_ on ``$PATH`` (optional —
   without it the editor's :ref:`formatting <Formatting>` is hidden)
 - `tinymist <https://github.com/Myriad-Dreamin/tinymist>`_ on ``$PATH``
-  (optional — without it the editor's :ref:`error detection <Error detection>`
+  (optional — without it the editor's :ref:`live error checking <Live error checking>`
   is disabled)
 - Git with `Git LFS <https://git-lfs.com/>`_
 

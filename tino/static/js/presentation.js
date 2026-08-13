@@ -61,11 +61,13 @@ export class PresentationMode {
   }
 
   /**
-   * Enter fullscreen presentation mode.
+   * Enter fullscreen presentation mode. Long documents render their pages
+   * lazily, so the deck is completed before the first slide is shown.
    * @param {number} index - Zero-based slide to start from.
    */
 
-  start(index) {
+  async start(index) {
+    await this.app.preview.ensureAllPages()
     const pages = this.app.preview.pageElements
     if (pages.length === 0)
       return

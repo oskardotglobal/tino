@@ -4,6 +4,7 @@ import { readRoute, writeRoute } from './router.js'
 import { ApiKeyManager } from './api-key-manager.js'
 import { BucketEvents } from './bucket-events.js'
 import { CodeMirrorEditor } from './codemirror-editor.js'
+import { DiagnosticsManager } from './diagnostics.js'
 import { EditorManager } from './editor-manager.js'
 import { EditorTooling } from './editor-tooling.js'
 import { FileTree } from './file-tree.js'
@@ -87,14 +88,22 @@ class TinoApp {
     this.fileTree = new FileTree(this)
     this.git = new GitManager(this)
     this.panelResize = new PanelResize()
-    this.preview = new PreviewManager(this)
-    this.presentation = new PresentationMode(this)
-    this.speaker = new SpeakerMode(this)
+    this.tooling = new EditorTooling(this)
+    this._initPreview()
     this._initDialogs()
   }
 
+  /* The preview, the compiler diagnostics it reports and the two slide modes
+     projecting its pages: one group, built together. */
+
+  _initPreview() {
+    this.diagnostics = new DiagnosticsManager(this)
+    this.preview = new PreviewManager(this)
+    this.presentation = new PresentationMode(this)
+    this.speaker = new SpeakerMode(this)
+  }
+
   _initDialogs() {
-    this.tooling = new EditorTooling(this)
     this.fontManager = new FontManager(this)
     this.apiKeyManager = new ApiKeyManager(this)
     this.templatePicker = new TemplatePicker(this)
@@ -126,6 +135,7 @@ class TinoApp {
     this._bindFileTree()
     this._bindDialogs()
     this.preview.bindZoom()
+    this.diagnostics.bind()
     this.presentation.bind()
     this.speaker.bind()
   }

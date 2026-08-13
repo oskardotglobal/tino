@@ -168,8 +168,20 @@ export class TinoAPI extends GitAPI {
 
   // ── Compile ──
 
+  /**
+   * Compile a document. Short documents come back with every page inlined;
+   * long ones carry only their first page and are flagged `paged`, their
+   * remaining pages being fetched with {@link TinoAPI#compilePage}.
+   */
+
   compile(slug, path) {
     return this._fetch(`${bucketPath(slug)}/compile/svg/${path}`)
+  }
+
+  /** Compile (or fetch from the server cache) one page of a long document. */
+
+  compilePage(slug, path, page) {
+    return this._fetch(`${bucketPath(slug)}/compile/page/${page}/${path}`)
   }
 
   // ── Editor tooling ──
@@ -186,16 +198,16 @@ export class TinoAPI extends GitAPI {
   }
 
   /**
-   * Check a buffer for errors with tinymist, without saving it first.
+   * Check a buffer with tinymist, without saving or compiling it first.
    * @param {string} slug - Bucket the buffer belongs to.
    * @param {string} path - Path the buffer is edited at (resolves imports).
    * @param {string} content - The (possibly unsaved) source text.
    * @returns {Promise<{diagnostics: Array}>} LSP-shaped diagnostics.
    */
 
-  diagnostics(slug, path, content) {
+  lint(slug, path, content) {
     return this._json(
-      'POST', `${bucketPath(slug)}/diagnostics/${path}`, { content },
+      'POST', `${bucketPath(slug)}/lint/${path}`, { content },
     )
   }
 

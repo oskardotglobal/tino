@@ -1,3 +1,5 @@
+import { SINGLE_ITEM } from './constants.js'
+
 /**
  * Whole-document formatting for the editor, backed by typstyle on the server.
  *
@@ -76,8 +78,39 @@ export class EditorFormat {
       this.app.toast.info('Document changed while formatting — nothing applied.')
       return
     }
-    if (!editor.replaceText(result.content))
+    if (result.content === before) {
       this.app.toast.info('Already formatted.')
+      return
+    }
+
+    /* Applied as an ordinary transaction: the change is reported (so the file is
+       marked dirty and autosaved) and propagates over collaboration. */
+
+    editor.view.dispatch({ changes: EditorFormat._change(before, result.content) })
+  }
+
+  /* Narrow a whole-document rewrite down to the span that actually differs, by
+     skipping the common prefix and the common suffix — so the caret, the remote
+     cursors and the undo history survive a reformat of part of the document. */
+
+  static _change(current, text) {
+    const max = Math.min(current.length, text.length)
+    let start = 0
+    while (start < max && current[start] === text[start])
+      start += SINGLE_ITEM
+    let trail = 0
+    while (
+      trail < max - start
+      && current[current.length - trail - SINGLE_ITEM]
+        === text[text.length - trail - SINGLE_ITEM]
+    )
+      trail += SINGLE_ITEM
+
+    return {
+      from: start,
+      insert: text.slice(start, text.length - trail),
+      to: current.length - trail,
+    }
   }
 
 }

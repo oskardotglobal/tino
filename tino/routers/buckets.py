@@ -5,9 +5,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import can_manage_access, get_current_user, get_profile_service, resolve_role
-from ..dependencies import get_bucket_service, require_bucket_owner, require_viewer
+from ..dependencies import get_bucket_service, get_compiler_service, require_bucket_owner, \
+    require_viewer
 from ..models import BucketCreate, BucketInfo, BucketUpdate
 from ..services.bucket import BucketService
+from ..services.compiler import CompilerService
 from ..services.profile import ProfileService
 
 logger = logging.getLogger(__name__)
@@ -114,10 +116,13 @@ async def delete_bucket(
     slug: str,
     user=Depends(require_bucket_owner),
     svc: BucketService = Depends(get_bucket_service),
+    compiler: CompilerService = Depends(get_compiler_service),
 ):
     '''Delete a bucket and its git repo from disk (owner or administrator only).'''
     if not svc.delete(slug):
         logger.warning('Bucket deletion rejected: %s not found (user: %s)', slug, user.username)
         raise HTTPException(404, 'Bucket not found')
+
+    compiler.purge(slug)
 
     logger.info('Bucket deleted: %s (user: %s)', slug, user.username)

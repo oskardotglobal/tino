@@ -49,7 +49,7 @@ export class TreeNewMenu {
 
   _run(action) {
     if (action === 'file')
-      this.app.editor.createNewFile()
+      this.app.fileTree.actions.createFile()
     else if (action === 'folder')
       this.app.fileTree.actions.createFolder()
     else if (action === 'template')

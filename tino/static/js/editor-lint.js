@@ -7,7 +7,8 @@ import { SINGLE_ITEM } from './constants.js'
  * diagnostics come back with zero-based line/character positions, which are
  * converted to CodeMirror document offsets here. CodeMirror drives the polling
  * through its lint extension, so checks are debounced and superseded requests
- * are discarded for us.
+ * are discarded for us; the editor merges the result with the compiler's own
+ * diagnostics (see diagnostics.js).
  */
 
 /** Diagnostic severities CodeMirror understands, keyed by the API's names. */
@@ -19,7 +20,7 @@ const SEVERITIES = {
   warning: 'warning',
 }
 
-export class EditorDiagnostics {
+export class EditorLint {
 
   /** @param {TinoApp} app - Main application instance. */
 
@@ -29,15 +30,16 @@ export class EditorDiagnostics {
   }
 
   /**
-   * Activate error detection, unless the server reports no tinymist. Called
-   * once the frontend config is known.
+   * Take over the editor's diagnostics source, checking with tinymist when the
+   * server has it. Called once the frontend config is known.
+   *
+   * The source is bound either way: with no language server it contributes
+   * nothing, but it still keeps the problem count in the status bar in step with
+   * the compiler's diagnostics.
    */
 
   bind() {
-    if (this.app.config && this.app.config.diagnostics === false) {
-      this._available = false
-      return
-    }
+    this._available = !(this.app.config && this.app.config.linting === false)
     this.app.els.editor.setLintSource(view => this._check(view))
   }
 
@@ -47,7 +49,7 @@ export class EditorDiagnostics {
     const el = document.getElementById('status-bar-problems')
     if (!el)
       return
-    const count = this._available ? this.app.els.editor.problemCount : 0
+    const { problemCount: count } = this.app.els.editor
     el.classList.toggle('hidden', count === 0)
     el.textContent = count === SINGLE_ITEM ? '1 problem' : `${count} problems`
   }
@@ -66,12 +68,12 @@ export class EditorDiagnostics {
     if (!this._available || !this.app.bucket || !path || !path.endsWith('.typ'))
       return []
     try {
-      const result = await this.app.api.diagnostics(
+      const result = await this.app.api.lint(
         this.app.bucket, path, view.state.doc.toString(),
       )
       this._scheduleRender()
       return result.diagnostics
-        .map(diag => EditorDiagnostics._toCodeMirror(view, diag))
+        .map(diag => EditorLint._toCodeMirror(view, diag))
     }
     catch (err) {
       this._disable(err)
@@ -92,23 +94,23 @@ export class EditorDiagnostics {
 
   /*
    * A failing check means the server has no working tinymist (not installed,
-   * crashed, or timing out). Error detection is an assist, not a core feature,
-   * so it switches itself off instead of nagging on every keystroke.
+   * crashed, or timing out). Live checking is an assist on top of the compiler's
+   * diagnostics, so it switches itself off instead of nagging on every
+   * keystroke. The source stays bound and keeps reporting the count.
    */
 
   _disable(err) {
     this._available = false
-    this.app.els.editor.setLintSource(null)
     this.render()
-    this.app.toast.info(`Error detection is unavailable: ${err.message}`)
+    this.app.toast.info(`Live error checking is unavailable: ${err.message}`)
   }
 
   /** Convert one LSP diagnostic into its CodeMirror equivalent. */
 
   static _toCodeMirror(view, diag) {
     const range = diag.range || {}
-    const from = EditorDiagnostics._offset(view, range.start)
-    const to = EditorDiagnostics._offset(view, range.end)
+    const from = EditorLint._offset(view, range.start)
+    const to = EditorLint._offset(view, range.end)
     return {
       from,
       message: diag.message,

@@ -5,7 +5,7 @@
 
 TINO's editor is built on `CodeMirror 6 <https://codemirror.net/>`_ and
 offers Typst-aware syntax highlighting, structural indentation, search and
-navigation, code folding, document formatting, live error detection, and
+navigation, code folding, document formatting, live error checking, and
 optional Vim or Helix keybindings.
 
 Tabs
@@ -113,7 +113,7 @@ Keyboard shortcuts
    * - :kbd:`Shift+Alt+F`
      - Format the document (see :ref:`Formatting`).
    * - :kbd:`F8` / :kbd:`Shift+F8`
-     - Jump to the next / previous problem (see :ref:`Error detection`).
+     - Jump to the next / previous problem (see :ref:`Live error checking`).
    * - :kbd:`Ctrl+Shift+M` / :kbd:`⌘⇧M`
      - Open the problem list panel.
 
@@ -143,20 +143,23 @@ The style is configured server-side with
    ``typstyle`` binary — the official Docker image ships it for all platforms
    with an upstream release.
 
-.. _Error detection:
+.. _Live error checking:
 
-Error detection
-~~~~~~~~~~~~~~~
+Live error checking
+~~~~~~~~~~~~~~~~~~~
 
 While you type, ``.typ`` files are checked by
 `tinymist <https://github.com/Myriad-Dreamin/tinymist>`_, the Typst language
-server. Errors and warnings are underlined in the document, marked in the gutter
-beside the line numbers, and counted in the editor's status bar. Hover a marker
-or an underline to read the message.
+server. Its findings appear the same way the
+:ref:`compiler's <Compiler errors>` do — underlined in the document with the
+message on hover, and marked in the gutter — and the editor's status bar counts
+how many problems the file currently has. When both report the same mistake, the
+language server's version is shown, since it marks the exact range rather than
+the whole line.
 
-Checks run on the buffer as it is on screen — unsaved changes included, and
-before a compile — so a mistake shows up as soon as you pause typing rather than
-when the preview next renders. Imports and packages resolve relative to the
+The difference is *when*: checks run on the buffer as it is on screen, unsaved
+changes included, so a mistake shows up as soon as you pause typing instead of
+after the next save and compile. Imports and packages resolve relative to the
 project, exactly as they do for the compiled document.
 
 .. hint::
@@ -166,10 +169,11 @@ project, exactly as they do for the compiled document.
 
 .. note::
 
-   Error detection needs the ``tinymist`` binary on the server. One language
-   server is started per project on demand and shut down again after
-   :attr:`TINO_LSP_TTL <tino.config.TINO_LSP_TTL>` seconds without a check. When the binary is
-   missing, the editor silently does without it.
+   Live checking needs the ``tinymist`` binary on the server. One language server
+   is started per project on demand and shut down again after
+   :attr:`TINO_LSP_TTL <tino.config.TINO_LSP_TTL>` seconds without a check. When
+   the binary is missing, the editor falls back to the compiler's diagnostics
+   alone.
 
 Folding and brackets
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -248,3 +252,32 @@ The right-hand panel shows an SVG preview of the current ``.typ`` file.
 The preview is re-rendered automatically after each save.
 
 Use the **Zoom in** / **Zoom out** buttons (or the displayed percentage) to adjust the preview scale.
+
+.. _Compiler errors:
+
+Compiler errors
+~~~~~~~~~~~~~~~
+
+Errors and warnings are reported **where they happen**: underlined in the editor
+on the offending line, with the message on hover and a marker in the gutter.
+They are also listed above the preview — including the ones in files you do not
+have open, such as an imported template — and clicking an entry jumps straight
+to that file and line.
+
+A document that does not compile never empties the preview: the last successful
+render stays on screen, dimmed, until the next one succeeds.
+
+Compiler diagnostics describe the document as it was last compiled;
+:ref:`Live error checking` catches mistakes in the buffer before that.
+
+Long documents
+~~~~~~~~~~~~~~
+
+Documents longer than
+:attr:`TINO_PAGED_THRESHOLD <tino.config.TINO_PAGED_THRESHOLD>` pages
+(10 by default) are compiled page by page: every change re-renders only the
+first page, so the preview updates as quickly as for a short document. The rest
+of the document is rendered in the background right after, and any page not
+ready yet is compiled on demand when you scroll to it. Compiled pages are cached
+until the document — or a file it imports — changes, so scrolling back and forth
+through a long document costs nothing.

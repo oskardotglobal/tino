@@ -50,8 +50,6 @@ export {
   lintGutter,
   lintKeymap,
   linter,
-  nextDiagnostic,
-  openLintPanel,
 } from '@codemirror/lint'
 export { tags } from '@lezer/highlight'
 export { vim } from '@replit/codemirror-vim'

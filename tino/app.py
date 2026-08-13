@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from . import config
 from .auth import router as auth_router
 from .auth import setup_oauth
-from .dependencies import get_collab_manager, get_diagnostics_service
+from .dependencies import get_collab_manager, get_lsp_service
 from .middleware import register_middleware
 from .routers import api_keys, buckets, collab
 from .routers import compile as compile_router
@@ -45,7 +45,7 @@ async def lifespan(_app: FastAPI):
     yield
 
     await collab_mgr.shutdown()
-    await get_diagnostics_service().shutdown()
+    await get_lsp_service().shutdown()
 
 
 def create_app() -> FastAPI:

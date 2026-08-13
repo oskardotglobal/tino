@@ -82,7 +82,8 @@ export class SpeakerMode {
 
   /** Open the audience popup and switch the editor to the speaker view. */
 
-  start() {
+  async start() {
+    await this.app.preview.ensureAllPages()
     const pages = this.app.preview.pageElements
     if (pages.length === 0)
       return

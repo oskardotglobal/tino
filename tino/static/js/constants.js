@@ -34,6 +34,13 @@ export const PANEL_MIN_WIDTH_RIGHT = 350
 
 export const PANEL_MAX_WIDTH = 500
 
+/**
+ * How far outside the preview viewport a page of a long document is compiled
+ * ahead of time, so scrolling meets ready pages instead of empty ones.
+ */
+
+export const PAGE_PREFETCH_MARGIN = '600px'
+
 /** Sentinel returned by indexOf when an element is not found. */
 
 export const INDEX_NOT_FOUND = -1

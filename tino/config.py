@@ -13,6 +13,7 @@ __all__ = (
     "TINO_AUTH_DISABLED",
     "TINO_BASE_URL",
     "TINO_BUCKET_DIR",
+    "TINO_CACHE_DIR",
     "TINO_DATA_DIR",
     "TINO_DEFAULT_ROLE",
     "TINO_FONT_DIR",
@@ -25,6 +26,7 @@ __all__ = (
     "TINO_OIDC_DISCOVERY_URL",
     "TINO_OIDC_GROUPS_CLAIM",
     "TINO_PACKAGE_DIR",
+    "TINO_PAGED_THRESHOLD",
     "TINO_REPO_URL",
     "TINO_ROOM_TTL",
     "TINO_SAVE_DEBOUNCE_MS",
@@ -81,6 +83,14 @@ _DEFAULT_PACKAGE_DIR = str(TINO_BUCKET_DIR / "packages")
 #:  - Via `COPY <https://docs.docker.com/reference/dockerfile/#copy>`_ or
 #:    `ADD <https://docs.docker.com/reference/dockerfile/#add>`_ during build time
 TINO_PACKAGE_DIR = Path(environ.get("TINO_PACKAGE_DIR", _DEFAULT_PACKAGE_DIR))
+
+_DEFAULT_CACHE_DIR = str(TINO_DATA_DIR / "cache")
+#: ⭕ The directory where compiled preview pages are cached.
+#:
+#: .. hint::
+#:  By default this is a sub directory of the :attr:`TINO_DATA_DIR`. The cache is
+#:  purely derived data — deleting it only costs one recompilation per document.
+TINO_CACHE_DIR = Path(environ.get("TINO_CACHE_DIR", _DEFAULT_CACHE_DIR))
 
 _DEFAULT_FONT_DIR = str(TINO_DATA_DIR / "fonts")
 #: Optional directory for custom fonts.
@@ -166,6 +176,14 @@ TINO_FORMAT_INDENT_WIDTH = int(environ.get("TINO_FORMAT_INDENT_WIDTH", "2"))
 #: error check. The server provides the editor's live error detection; keeping it
 #: warm avoids re-reading fonts and packages on every check.
 TINO_LSP_TTL = int(environ.get("TINO_LSP_TTL", "300"))
+
+#: ⭕ Page count from which documents are compiled page by page instead of as a whole.
+#:
+#: .. hint::
+#:  Long documents only compile their first page on every change; the remaining
+#:  pages are compiled lazily, when the preview scrolls to them, and are cached
+#:  until the document (or one of its dependencies) changes.
+TINO_PAGED_THRESHOLD = int(environ.get("TINO_PAGED_THRESHOLD", "10"))
 
 #: ⭕ Seconds to keep a collaboration room alive after the last client disconnects.
 #: Allows reconnecting clients (e.g. page refresh) to reuse the room.

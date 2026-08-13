@@ -8,8 +8,8 @@ from starlette.responses import Response
 
 from .. import config
 from ..services.compiler import CompilerService
-from ..services.diagnostics import DiagnosticsService
 from ..services.formatter import FormatterService
+from ..services.lsp import LspService
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def _count_buckets() -> int:
 _APP_VERSION = _app_version()
 _TYPST_VERSION = _typst_version()
 _TYPSTYLE_VERSION = FormatterService.version()
-_TINYMIST_VERSION = DiagnosticsService.version()
+_TINYMIST_VERSION = LspService.version()
 
 
 @router.get('/health')
@@ -62,7 +62,7 @@ async def health():
 async def frontend_config():
     '''Return frontend configuration values.'''
     return {
-        'diagnostics': _TINYMIST_VERSION is not None,
+        'linting': _TINYMIST_VERSION is not None,
         'formatting': _TYPSTYLE_VERSION is not None,
         'repoUrl': config.TINO_REPO_URL,
         'saveDebounceMs': config.TINO_SAVE_DEBOUNCE_MS,
