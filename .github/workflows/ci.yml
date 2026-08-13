@@ -172,7 +172,7 @@ jobs:
       - uses: docker/metadata-action@v6
         id: meta
         with:
-          images: ghcr.io/confirm/tino
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
