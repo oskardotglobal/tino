@@ -986,9 +986,9 @@ html, body {
 }
 
 /*
- * Diagnostics (tinymist): CodeMirror's lint extension paints its own wavy
- * underline as a background image, which does not follow the theme. It is
- * replaced with a text decoration in the palette's colours.
+ * CodeMirror's lint extension paints its own wavy underline as a background
+ * image, which does not follow the theme. It is replaced with a text decoration
+ * in the palette's colours.
  */
 
 .editor .cm-lintRange {
@@ -1005,45 +1005,100 @@ html, body {
 .editor .cm-lintRange-info,
 .editor .cm-lintRange-hint { text-decoration-color: var(--cd-azure-50); }
 
-.editor .cm-tooltip {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-family: var(--font-sans);
+
+/*
+ * Completion popup. CodeMirror ships a light-theme list; the palette's colours
+ * are bound here, and the info panel beside it holds Typst's own reference text,
+ * so it gets room to breathe.
+ */
+
+.editor .cm-tooltip-autocomplete > ul {
+  max-height: 16em;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
-.editor .cm-diagnostic {
-  padding: 6px 8px;
-  border-left-width: 3px;
+.editor .cm-tooltip-autocomplete > ul > li {
+  padding: 3px 8px;
+  color: var(--text-primary);
 }
 
-.editor .cm-diagnostic-error { border-left-color: var(--cd-red-50); }
+.editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent-60);
+  color: #ffffff;
+}
 
-.editor .cm-diagnostic-warning { border-left-color: var(--cd-yellow-50); }
+.editor .cm-completionLabel { color: inherit; }
 
-.editor .cm-diagnostic-info,
-.editor .cm-diagnostic-hint { border-left-color: var(--cd-azure-50); }
-
-.editor .cm-diagnosticSource {
-  opacity: 0.7;
+.editor .cm-completionDetail {
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-style: normal;
   font-size: 11px;
 }
 
-.editor .cm-panel.cm-panel-lint {
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--border);
-  font-family: var(--font-sans);
-  font-size: 12px;
+.editor .cm-completionIcon {
+  margin-right: 6px;
+  opacity: 0.7;
 }
 
-.editor .cm-panel.cm-panel-lint ul [aria-selected] {
-  background: var(--bg-active);
+.editor .cm-tooltip.cm-completionInfo {
+  max-width: 28em;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
   color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  white-space: pre-wrap;
 }
 
 /* stylelint-enable selector-class-pattern, no-descending-specificity */
+
+/* ── Code-action menu ── */
+
+/*
+ * Floating menu of the code actions offered at the caret (see
+ * editor-actions.js). Positioned in JavaScript, hence the fixed placement.
+ */
+
+.action-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  max-width: 380px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.action-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.action-item:hover,
+.action-item:focus {
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.action-item .material-symbols-outlined {
+  font-size: 16px;
+  color: var(--accent-60);
+}
 
 /* ── Typst syntax tokens ── */
 
@@ -1201,13 +1256,6 @@ html, body {
 
 #status-bar-modified {
   margin-left: auto;
-}
-
-/* Problem count from the editor's error detection (see editor-diagnostics.js). */
-
-.status-problems {
-  color: var(--cd-red-50);
-  font-weight: 600;
 }
 
 /*

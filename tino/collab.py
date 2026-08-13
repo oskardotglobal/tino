@@ -48,6 +48,41 @@ class FastAPIChannel(Channel):
             raise StopAsyncIteration() from exc
 
 
+def _is_continuation(data: bytes, index: int) -> bool:
+    '''Whether the byte at ``index`` continues a multi-byte UTF-8 sequence.'''
+    return index < len(data) and (data[index] & 0xC0) == 0x80
+
+
+def _common_prefix(old: bytes, new: bytes) -> int:
+    '''Length of the shared start of two encoded strings, on a codepoint edge.'''
+    limit = min(len(old), len(new))
+    index = 0
+
+    while index < limit and old[index] == new[index]:  # pylint: disable=while-used
+        index += 1
+
+    while _is_continuation(old, index):  # pylint: disable=while-used
+        index -= 1
+
+    return index
+
+
+def _common_suffix(old: bytes, new: bytes, head: int) -> int:
+    '''Length of the shared end of two encoded strings, on a codepoint edge.'''
+    limit = min(len(old), len(new)) - head
+    count = 0
+
+    while (  # pylint: disable=while-used
+        count < limit and old[len(old) - count - 1] == new[len(new) - count - 1]
+    ):
+        count += 1
+
+    while _is_continuation(old, len(old) - count):  # pylint: disable=while-used
+        count -= 1
+
+    return count
+
+
 class CollabManager:
     '''Manages Yjs collaboration rooms for concurrent file editing.
 
@@ -238,6 +273,71 @@ class CollabManager:
             return None
         ytext = room.ydoc.get('content', type=Text)
         return str(ytext)
+
+    def document_text(self, slug: str, file_path: str) -> str | None:
+        '''Return the document as the server knows it, or None if there is none.
+
+        The live YText while the file is open — that is the authoritative copy,
+        ahead of disk by up to one autosave — and the file's content otherwise.
+        '''
+        live = self.get_content(slug, file_path)
+
+        if live is not None:
+            return live
+
+        result = self.file_service.read(slug, file_path)
+
+        return result['content'] if result else None
+
+    async def replace_content(self, slug: str, file_path: str, new_content: str) -> None:
+        '''Rewrite a file's content through the CRDT, then flush it to disk.
+
+        The only way the server itself may change a file's text. Writing to disk
+        directly would race the room: a connected client's next update is
+        computed against the CRDT, so a change it never saw would be undone (or
+        worse, interleaved) on the next flush. Going through the YText instead
+        makes the server just another editor of the document.
+
+        The room is created (loading the file from disk) when the file is not
+        currently open, so the path is the same either way.
+        '''
+        room = await self._get_or_create_room(slug, file_path)
+
+        if room is None:
+            raise FileNotFoundError(f'{file_path} not found in bucket {slug}')
+
+        key = (slug, file_path)
+        async with self._get_lock(key):
+            ytext = room.ydoc.get('content', type=Text)
+            current = str(ytext)
+
+            if current != new_content:
+                CollabManager._splice_ytext(ytext, current, new_content)
+                logger.info('Rewrote %s/%s through the CRDT', slug, file_path)
+
+            await self._flush_room(slug, file_path, room)
+
+    @staticmethod
+    def _splice_ytext(ytext, current, new_content):
+        '''Replace only the part of the YText that differs.
+
+        A delete-all-and-reinsert would discard every client's cursor and, worse,
+        turn a concurrent keystroke into an edit of text that no longer exists.
+        Only the span between the common prefix and the common suffix is touched.
+
+        pycrdt indexes YText by UTF-8 byte offset, so the boundaries are found on
+        the encoded strings and then walked back onto a codepoint boundary.
+        '''
+        old_bytes = current.encode()
+        new_bytes = new_content.encode()
+        head = _common_prefix(old_bytes, new_bytes)
+        tail = _common_suffix(old_bytes, new_bytes, head)
+        middle = new_bytes[head:len(new_bytes) - tail].decode()
+
+        if len(old_bytes) - tail > head:
+            del ytext[head:len(old_bytes) - tail]
+        if middle:
+            ytext.insert(head, middle)
 
     def start(self) -> None:
         '''Called on application startup (reserved for future use).'''

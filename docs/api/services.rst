@@ -48,3 +48,9 @@
 
 .. automodule:: tino.services.template
    :members:
+
+``tino.services.text_edits``
+----------------------------
+
+.. automodule:: tino.services.text_edits
+   :members:

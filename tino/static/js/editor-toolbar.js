@@ -71,6 +71,7 @@ export class EditorToolbar {
       case 'table': this._insertTable(); break
       case 'wrap': this._toggleWrap(); break
       case 'format': this.app.tooling.format.run(); break
+      case 'code-actions': this.app.tooling.actions.open(); break
       default: break
     }
   }

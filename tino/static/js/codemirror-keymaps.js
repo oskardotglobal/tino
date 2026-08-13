@@ -65,3 +65,17 @@ export const formatBinding = onFormat => ({
     return true
   },
 })
+
+/*
+ * Mod-. offers the code actions for the selection, as it does in VS Code. Like
+ * formatting, the work happens outside CodeMirror.
+ */
+
+export const codeActionBinding = onCodeAction => ({
+  key: 'Mod-.',
+  preventDefault: true,
+  run: () => {
+    onCodeAction()
+    return true
+  },
+})

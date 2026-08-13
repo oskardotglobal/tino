@@ -29,10 +29,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lf
        esac \
     && curl -sSfL https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${TYPST_TARGET}.tar.xz \
        | tar -xJ --strip-components=1 -C /usr/local/bin typst-${TYPST_TARGET}/typst \
-    # The editor's error detection (tinymist) and formatting (typstyle) are
-    # optional: TINO reports them as unavailable and hides them in the UI when
-    # the binary is missing, so a platform without a release is not a build
-    # failure. typstyle ships plain binaries, tinymist a tarball.
+    # The editor's language tooling — completion and code actions (tinymist),
+    # formatting (typstyle) — is optional: TINO reports it as unavailable and
+    # hides it in the UI when the binary is missing, so a platform without a
+    # release is not a build failure. typstyle ships plain binaries, tinymist a
+    # tarball.
     && case "$TARGETARCH/$TARGETVARIANT" in \
          amd64/*)   TINYMIST_TARGET=x86_64-unknown-linux-musl ;; \
          arm64/*)   TINYMIST_TARGET=aarch64-unknown-linux-musl ;; \
@@ -43,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lf
          curl -sSfL https://github.com/Myriad-Dreamin/tinymist/releases/download/v${TINYMIST_VERSION}/tinymist-${TINYMIST_TARGET}.tar.gz \
          | tar -xz --strip-components=1 -C /usr/local/bin tinymist-${TINYMIST_TARGET}/tinymist; \
        else \
-         echo "No tinymist binary for '${TARGETARCH}/${TARGETVARIANT}' — error detection disabled" >&2; \
+         echo "No tinymist binary for '${TARGETARCH}/${TARGETVARIANT}' — completion disabled" >&2; \
        fi \
     && case "$TARGETARCH/$TARGETVARIANT" in \
          amd64/*) TYPSTYLE_TARGET=x86_64-unknown-linux-gnu ;; \

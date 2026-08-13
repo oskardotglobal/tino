@@ -3,10 +3,11 @@ import { SINGLE_ITEM } from './constants.js'
 /**
  * Whole-document formatting for the editor, backed by typstyle on the server.
  *
- * The buffer is sent as-is and the formatted result is applied as an ordinary
- * edit, so it is autosaved and propagated to collaborators like any other
- * change. Only the differing part of the document is rewritten, which keeps the
- * caret (and everyone else's) where it was.
+ * The server formats its own copy of the file — the collaboration room's text —
+ * and answers with the result plus the text it started from. The editor applies
+ * it as an ordinary edit, so it reaches collaborators and disk the same way
+ * typing does, and only the differing part of the document is rewritten, which
+ * keeps the caret (and everyone else's) where it was.
  */
 
 export class EditorFormat {
@@ -65,28 +66,28 @@ export class EditorFormat {
     }
   }
 
+  /* Applied as an ordinary transaction: the change is reported (so the file is
+     marked dirty and autosaved) and propagates over collaboration. */
+
   async _format() {
     const { editor } = this.app.els
+    await this.app.tooling.sync()
+    const result = await this.app.api.format(this.app.bucket, this.app.currentFile)
     const before = editor.content
-    const result = await this.app.api.format(this.app.bucket, before)
 
-    /* Re-read the content: the user (or a collaborator) may have typed while
-       the request was in flight, and overwriting that with a stale format
-       result would drop their edit. */
+    /* The document must still be the one that was formatted. It differs when
+       someone typed while the request was in flight, or when the editor's own
+       edits had not reached the room yet — applying the result would then undo
+       whatever the server had not seen. */
 
-    if (editor.content !== before) {
-      this.app.toast.info('Document changed while formatting — nothing applied.')
+    if (result.original !== before) {
+      this.app.toast.info('Document changed while formatting — try again.')
       return
     }
-    if (result.content === before) {
+    if (result.content === before)
       this.app.toast.info('Already formatted.')
-      return
-    }
-
-    /* Applied as an ordinary transaction: the change is reported (so the file is
-       marked dirty and autosaved) and propagates over collaboration. */
-
-    editor.view.dispatch({ changes: EditorFormat._change(before, result.content) })
+    else
+      editor.view.dispatch({ changes: EditorFormat._change(before, result.content) })
   }
 
   /* Narrow a whole-document rewrite down to the span that actually differs, by

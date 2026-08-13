@@ -173,8 +173,8 @@ TINO_FORMAT_LINE_WIDTH = int(environ.get("TINO_FORMAT_LINE_WIDTH", "80"))
 TINO_FORMAT_INDENT_WIDTH = int(environ.get("TINO_FORMAT_INDENT_WIDTH", "2"))
 
 #: ⭕ Seconds to keep a bucket's ``tinymist`` language server alive after the last
-#: error check. The server provides the editor's live error detection; keeping it
-#: warm avoids re-reading fonts and packages on every check.
+#: request. The server answers the editor's completion and code-action requests;
+#: keeping it warm avoids re-reading fonts and packages for every keystroke.
 TINO_LSP_TTL = int(environ.get("TINO_LSP_TTL", "300"))
 
 #: ⭕ Page count from which documents are compiled page by page instead of as a whole.

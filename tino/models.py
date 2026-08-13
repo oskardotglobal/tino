@@ -101,10 +101,42 @@ class FileEntry(BaseModel):
 
 # ── Editor tooling ──
 
+# Positions are LSP-shaped, which is also how CodeMirror reports them: a
+# zero-based line plus a zero-based character offset in UTF-16 code units.
 
-class SourceBuffer(BaseModel):
-    '''Request body carrying the editor's current (possibly unsaved) buffer.'''
-    content: str
+
+class Position(BaseModel):
+    '''A caret position in a document.'''
+    line: int = Field(ge=0)
+    character: int = Field(ge=0)
+
+
+class Span(BaseModel):
+    '''A range of text in a document.'''
+    start: Position
+    end: Position
+
+
+class CompletionRequest(BaseModel):
+    '''Request body asking what may be typed at a position.'''
+    position: Position
+
+
+class CodeActionRequest(BaseModel):
+    '''Request body asking which code actions apply to a range.'''
+    span: Span
+
+
+class TextEdit(BaseModel):
+    '''One replacement in a document, as offered by a code action.'''
+    range: Span
+    new_text: str
+    snippet: bool = False
+
+
+class EditRequest(BaseModel):
+    '''Request body applying a code action's edits, keyed by bucket path.'''
+    files: dict[str, list[TextEdit]]
 
 
 # ── Search ──

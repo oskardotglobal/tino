@@ -5,7 +5,7 @@
 
 TINO's editor is built on `CodeMirror 6 <https://codemirror.net/>`_ and
 offers Typst-aware syntax highlighting, structural indentation, search and
-navigation, code folding, document formatting, live error checking, and
+navigation, code folding, completion, code actions, document formatting, and
 optional Vim or Helix keybindings.
 
 Tabs
@@ -74,6 +74,9 @@ For the full syntax reference, see the `Typst documentation <https://typst.app/d
    * - Format document
      - —
      - Reformat the whole file with :ref:`typstyle <Formatting>`.
+   * - Code actions
+     - —
+     - Offer the :ref:`code actions <Code actions>` for the selection.
 
 Indentation
 ~~~~~~~~~~~
@@ -110,12 +113,13 @@ Keyboard shortcuts
      - Go to line.
    * - :kbd:`Ctrl+D` / :kbd:`⌘D`
      - Select the next occurrence of the selection (multi-cursor).
+   * - :kbd:`Ctrl+Space`
+     - Ask for :ref:`completions <Completion>` where they are not offered by
+       themselves.
+   * - :kbd:`Ctrl+.` / :kbd:`⌘.`
+     - Show the :ref:`code actions <Code actions>` for the selection.
    * - :kbd:`Shift+Alt+F`
      - Format the document (see :ref:`Formatting`).
-   * - :kbd:`F8` / :kbd:`Shift+F8`
-     - Jump to the next / previous problem (see :ref:`Live error checking`).
-   * - :kbd:`Ctrl+Shift+M` / :kbd:`⌘⇧M`
-     - Open the problem list panel.
 
 .. _Formatting:
 
@@ -143,37 +147,55 @@ The style is configured server-side with
    ``typstyle`` binary — the official Docker image ships it for all platforms
    with an upstream release.
 
-.. _Live error checking:
+.. _Completion:
 
-Live error checking
-~~~~~~~~~~~~~~~~~~~
+Completion
+~~~~~~~~~~
 
-While you type, ``.typ`` files are checked by
-`tinymist <https://github.com/Myriad-Dreamin/tinymist>`_, the Typst language
-server. Its findings appear the same way the
-:ref:`compiler's <Compiler errors>` do — underlined in the document with the
-message on hover, and marked in the gutter — and the editor's status bar counts
-how many problems the file currently has. When both report the same mistake, the
-language server's version is shown, since it marks the exact range rather than
-the whole line.
+While you type in a ``.typ`` file, `tinymist
+<https://github.com/Myriad-Dreamin/tinymist>`_ — the Typst language server —
+suggests what can go there: functions from the standard library and from the
+packages the document imports, their named arguments, fields and methods of a
+value, labels, paths, and package names. Each suggestion carries Typst's own
+reference text, shown beside the list.
 
-The difference is *when*: checks run on the buffer as it is on screen, unsaved
-changes included, so a mistake shows up as soon as you pause typing instead of
-after the next save and compile. Imports and packages resolve relative to the
-project, exactly as they do for the compiled document.
+Suggestions appear on their own after a word or one of Typst's syntax characters
+(``#``, ``(``, ``.``, ``:``, ``@``, …); :kbd:`Ctrl+Space` asks for them anywhere.
+:kbd:`Enter` inserts the selected one, :kbd:`Escape` dismisses the list.
 
-.. hint::
+Many suggestions insert a whole call rather than a name — picking ``figure``
+writes ``figure(caption: [Caption], …)`` — and leave the caret on the first part
+you have to fill in. :kbd:`Tab` moves to the next one.
 
-   Use :kbd:`F8` to walk through the problems, and :kbd:`Ctrl+Shift+M` to open
-   them as a list.
+.. _Code actions:
+
+Code actions
+~~~~~~~~~~~~
+
+The language server also offers small, mechanical rewrites of what the selection
+covers: wrapping a paragraph in content brackets, putting an image in a figure
+with a caption, turning a relative path into an absolute one, and so on. Press
+:kbd:`Ctrl+.` or use the toolbar's **Code actions** button to see what applies
+where the caret is; the menu lists them, and :kbd:`Escape` closes it without
+changing anything.
+
+An action that touches only the open file is applied like an edit you typed
+yourself. When one also changes another file in the project, that part is applied
+by the server — through the same collaborative document as everything else, so it
+cannot collide with someone editing that file at the time.
 
 .. note::
 
-   Live checking needs the ``tinymist`` binary on the server. One language server
-   is started per project on demand and shut down again after
-   :attr:`TINO_LSP_TTL <tino.config.TINO_LSP_TTL>` seconds without a check. When
-   the binary is missing, the editor falls back to the compiler's diagnostics
-   alone.
+   Completion and code actions need the ``tinymist`` binary on the server. One
+   language server is started per project on demand and shut down again after
+   :attr:`TINO_LSP_TTL <tino.config.TINO_LSP_TTL>` seconds without a request.
+   When the binary is missing, the editor does without both.
+
+.. hint::
+
+   The language server reads the document from the collaborative session rather
+   than from disk, so completions describe the file as it is on screen, including
+   changes that have not been saved yet.
 
 Folding and brackets
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -267,8 +289,8 @@ to that file and line.
 A document that does not compile never empties the preview: the last successful
 render stays on screen, dimmed, until the next one succeeds.
 
-Compiler diagnostics describe the document as it was last compiled;
-:ref:`Live error checking` catches mistakes in the buffer before that.
+Every error and warning comes from the compiler itself, which runs on each
+change — there is no second opinion to reconcile it with.
 
 Long documents
 ~~~~~~~~~~~~~~

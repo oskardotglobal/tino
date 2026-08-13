@@ -61,6 +61,7 @@ class TinoApp {
       commitMessage: document.getElementById('commit-message'),
       cursorPos: document.getElementById('cursor-pos'),
       editor: new CodeMirrorEditor(document.getElementById('editor'), {
+        onCodeAction: () => this.tooling.actions.open(),
         onCursor: () => this.editor.input.updateCursorPos(),
         onFormat: () => this.tooling.format.run(),
         statusHost: document.getElementById('keymap-status'),

@@ -1,8 +1,7 @@
 import { SINGLE_ITEM } from './constants.js'
 
 /**
- * Translation of compiler diagnostics into CodeMirror's own diagnostic shape,
- * and their merge with the language server's.
+ * Translation of compiler diagnostics into CodeMirror's own diagnostic shape.
  *
  * The compiler reports 1-based line/column pairs against the file *as saved*,
  * while CodeMirror works with document offsets of the buffer *as edited*.
@@ -43,37 +42,3 @@ const _toEditorDiagnostic = (state, diag) => {
 
 export const toEditorDiagnostics = (state, diagnostics) =>
   diagnostics.map(diag => _toEditorDiagnostic(state, diag))
-
-/*
- * The language server and the compiler frequently report the same mistake. The
- * server's version wins: it knows the buffer as edited and marks the exact
- * range, while the compiler marks the whole line of the file as last saved.
- *
- * Two reports count as the same when they name the same problem on the same
- * line. Only the first line of the message is compared, because the compiler
- * appends its hints to the message while the language server does not.
- */
-
-const _key = (state, diag) => {
-  const { number } = state.doc.lineAt(diag.from)
-
-  return `${number}:${diag.message.split('\n')[0]}`
-}
-
-/**
- * Combine live diagnostics with the compiler's, dropping compiler duplicates.
- * @param {EditorState} state - State both sets are resolved against.
- * @param {Array<object>} live - CodeMirror diagnostics from the language server.
- * @param {Array<object>} compiled - CodeMirror diagnostics from the compiler.
- * @returns {Array<object>} The diagnostics to show, ordered by position.
- */
-
-export const mergeDiagnostics = (state, live, compiled) => {
-  const seen = new Set(live.map(diag => _key(state, diag)))
-  const merged = [
-    ...live,
-    ...compiled.filter(diag => !seen.has(_key(state, diag))),
-  ]
-
-  return merged.sort((one, other) => one.from - other.from)
-}

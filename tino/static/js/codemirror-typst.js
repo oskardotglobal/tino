@@ -184,6 +184,14 @@ export const typstKeymap = [{ key: 'Enter', run: _listEnter }]
 
 /** Build the Typst language support extension. */
 
+/**
+ * Characters after which the language server has something to offer without
+ * being asked: the ones that open a code expression, a call, an argument, a
+ * field, a label, a path or a package name.
+ */
+
+export const COMPLETION_TRIGGERS = /[#(<,.:/"@]/u
+
 export const typst = () => [
   new LanguageSupport(typstLanguage),
   syntaxHighlighting(typstHighlight),

@@ -1,6 +1,7 @@
 import {
   EditorState,
   EditorView,
+  autocompletion,
   bracketMatching,
   codeFolding,
   defaultKeymap,
@@ -15,13 +16,10 @@ import {
   keymap,
   lineNumbers,
   lintGutter,
-  lintKeymap,
-  linter,
   searchKeymap,
 } from './vendor/codemirror.js'
-import { editorBindings, formatBinding } from './codemirror-keymaps.js'
+import { codeActionBinding, editorBindings, formatBinding } from './codemirror-keymaps.js'
 import { typst, typstKeymap } from './codemirror-typst.js'
-import { LINT_DEBOUNCE_MS } from './constants.js'
 
 /**
  * The CodeMirror extension set the editor runs with, kept apart from the
@@ -39,22 +37,22 @@ const historyExt = () => [history(), keymap.of(historyKeymap)]
  * @param {object} args.compartments - The reconfigurable compartments, keyed by
  *   `collab`, `editable`, `keymap` and `wrap`.
  * @param {Array} args.panelExt - Panel placement extension (keymap status bars).
- * @param {Function} args.lintSource - Diagnostics source, `view => Promise<[]>`,
- *   polled after edits (debounced) and on demand via `forceLinting`.
+ * @param {Function} args.completionSource - Completion source, `context => …`.
  * @param {Function} args.onFormat - Invoked by the format key binding.
+ * @param {Function} args.onCodeAction - Invoked by the code-action key binding.
  * @param {Function} args.onUpdate - Invoked for every CodeMirror view update.
  * @returns {Array} The extensions to create the editor state with.
  */
 
 export const editorExtensions = (
-  { compartments, panelExt, lintSource, onFormat, onUpdate },
+  { compartments, panelExt, completionSource, onFormat, onCodeAction, onUpdate },
 ) => [
   compartments.keymap.of([]),
   panelExt,
   compartments.wrap.of(EditorView.lineWrapping),
   lineNumbers(),
   lintGutter(),
-  linter(lintSource, { delay: LINT_DEBOUNCE_MS }),
+  autocompletion({ activateOnTyping: false, override: [completionSource] }),
   drawSelection(),
   foldGutter(),
   codeFolding(),
@@ -68,10 +66,10 @@ export const editorExtensions = (
   keymap.of([
     ...editorBindings,
     formatBinding(onFormat),
+    codeActionBinding(onCodeAction),
     ...typstKeymap,
     indentWithTab,
     ...searchKeymap,
-    ...lintKeymap,
     ...foldKeymap,
     ...defaultKeymap,
   ]),

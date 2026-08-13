@@ -28,7 +28,7 @@ export class EditorManager {
   async openFile(path) {
     if (!this.app.bucket)
       return
-    this._flushPendingSave()
+    this.flushSave()
 
     /* Fetch before mutating the editor, then bail if a newer open superseded us. */
 
@@ -46,12 +46,15 @@ export class EditorManager {
     await this.app.preview.update()
   }
 
-  _flushPendingSave() {
-    if (this._saveTimer) {
-      clearTimeout(this._saveTimer)
-      this._saveTimer = null
-      this.saveCurrentFile()
-    }
+  /** Save now if a debounced save is pending. @returns {Promise|null} */
+
+  flushSave() {
+    if (!this._saveTimer)
+      return null
+    clearTimeout(this._saveTimer)
+    this._saveTimer = null
+
+    return this.saveCurrentFile()
   }
 
   _activateTab(path, loaded) {
@@ -186,7 +189,7 @@ export class EditorManager {
   closeAllTabs() {
     if (!this.app.openTabs.length)
       return
-    this._flushPendingSave()
+    this.flushSave()
     this.resetState()
     this.saveTabs()
     writeRoute(this.app.bucket, null)

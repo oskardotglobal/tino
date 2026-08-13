@@ -62,7 +62,7 @@ async def health():
 async def frontend_config():
     '''Return frontend configuration values.'''
     return {
-        'linting': _TINYMIST_VERSION is not None,
+        'languageServer': _TINYMIST_VERSION is not None,
         'formatting': _TYPSTYLE_VERSION is not None,
         'repoUrl': config.TINO_REPO_URL,
         'saveDebounceMs': config.TINO_SAVE_DEBOUNCE_MS,

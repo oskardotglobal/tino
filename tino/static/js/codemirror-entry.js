@@ -44,13 +44,8 @@ export {
   searchKeymap,
   selectNextOccurrence,
 } from '@codemirror/search'
-export {
-  diagnosticCount,
-  forceLinting,
-  lintGutter,
-  lintKeymap,
-  linter,
-} from '@codemirror/lint'
+export { lintGutter, setDiagnostics } from '@codemirror/lint'
+export { autocompletion, snippet, startCompletion } from '@codemirror/autocomplete'
 export { tags } from '@lezer/highlight'
 export { vim } from '@replit/codemirror-vim'
 export { helix } from 'codemirror-helix'

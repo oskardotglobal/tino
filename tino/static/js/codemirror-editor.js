@@ -3,14 +3,15 @@ import {
   Compartment,
   EditorState,
   EditorView,
-  diagnosticCount,
-  forceLinting,
   panels,
+  setDiagnostics as setCmDiagnostics,
+  startCompletion,
 } from './vendor/codemirror.js'
-import { mergeDiagnostics, toEditorDiagnostics } from './codemirror-diagnostics.js'
-import { SINGLE_ITEM } from './constants.js'
+import { COMPLETE_DELAY_MS, SINGLE_ITEM } from './constants.js'
+import { COMPLETION_TRIGGERS } from './codemirror-typst.js'
 import { editorExtensions } from './codemirror-extensions.js'
 import { keymapExtension } from './codemirror-keymaps.js'
+import { toEditorDiagnostics } from './codemirror-diagnostics.js'
 
 /**
  * Editor controller around a CodeMirror 6 EditorView. Owns the view, its
@@ -36,6 +37,7 @@ export class CodeMirrorEditor {
    * @param {HTMLElement} [opts.statusHost] - Element hosting the keymap status
    *   bars (Vim's mode line, Helix's NOR indicator) instead of the editor.
    * @param {Function} [opts.onFormat] - Called by the format key binding.
+   * @param {Function} [opts.onCodeAction] - Called by the code-action key binding.
    */
 
   constructor(parent, opts = {}) {
@@ -44,8 +46,8 @@ export class CodeMirrorEditor {
     this._onCursor = opts.onCursor || _noop
     this._onChange = opts.onChange || _noop
     this._onFormat = opts.onFormat || _noop
-    this._compiled = []
-    this._liveSource = null
+    this._onCodeAction = opts.onCodeAction || _noop
+    this._completionSource = null
     this._parts = {
       collab: new Compartment(),
       editable: new Compartment(),
@@ -70,21 +72,13 @@ export class CodeMirrorEditor {
   }
 
   /**
-   * Bind or unbind the live diagnostics source (the language server). It is
-   * merged with the compiler's diagnostics into the single set the editor shows.
-   * @param {Function|null} source - `view => Promise<Diagnostic[]>`, or null to
-   *   leave the editor with the compiler's diagnostics alone.
+   * Bind or unbind the completion source the editor asks for suggestions.
+   * @param {Function|null} source - `context => Promise<CompletionResult>`, or
+   *   null to turn completion off.
    */
 
-  setLintSource(source) {
-    this._liveSource = source
-    forceLinting(this._view)
-  }
-
-  /** @returns {number} How many diagnostics the document currently has. */
-
-  get problemCount() {
-    return diagnosticCount(this._view.state)
+  setCompletionSource(source) {
+    this._completionSource = source
   }
 
   /**
@@ -127,7 +121,8 @@ export class CodeMirrorEditor {
       doc,
       extensions: editorExtensions({
         compartments: this._parts,
-        lintSource: view => this._lint(view),
+        completionSource: context => this._complete(context),
+        onCodeAction: () => this._onCodeAction(),
         onFormat: () => this._onFormat(),
         onUpdate: update => this._onUpdate(update),
         panelExt: this._panels(),
@@ -135,18 +130,37 @@ export class CodeMirrorEditor {
     })
   }
 
+  /* The completion source is bound after the view exists (it needs the app's
+     config), so the extension asks through this indirection. */
+
+  _complete(context) {
+    return this._completionSource ? this._completionSource(context) : null
+  }
+
   /*
-   * The editor shows one set of diagnostics from two sources: the compiler's,
-   * pushed in from the last compilation, and the language server's, fetched for
-   * the buffer as it stands. Both are resolved against the current document on
-   * every lint pass, so positions follow edits made since either was produced.
+   * When to ask for completions is decided here rather than left to
+   * CodeMirror's own typing heuristics, which do not know Typst: the list opens
+   * a moment after the caret comes to rest inside a word or right after one of
+   * Typst's syntax characters. The delay keeps a fast typist from asking the
+   * server about every intermediate keystroke.
    */
 
-  async _lint(view) {
-    const compiled = toEditorDiagnostics(view.state, this._compiled)
-    const live = this._liveSource ? await this._liveSource(view) : []
+  _scheduleCompletion(update) {
+    if (!this._completionSource || !update.docChanged)
+      return
+    if (!update.transactions.some(tr => tr.isUserEvent('input.type')))
+      return
+    clearTimeout(this._completeTimer)
+    this._completeTimer = setTimeout(() => this._startCompletion(), COMPLETE_DELAY_MS)
+  }
 
-    return mergeDiagnostics(view.state, live, compiled)
+  _startCompletion() {
+    const { state } = this._view
+    const pos = state.selection.main.head
+    const before = state.sliceDoc(Math.max(0, pos - SINGLE_ITEM), pos)
+
+    if ((/\w/u).test(before) || COMPLETION_TRIGGERS.test(before))
+      startCompletion(this._view)
   }
 
   _onUpdate(update) {
@@ -160,8 +174,10 @@ export class CodeMirrorEditor {
 
     if ((update.selectionSet || update.docChanged) && !programmatic)
       this._onCursor()
-    if (update.docChanged && !programmatic)
+    if (update.docChanged && !programmatic) {
       this._onChange()
+      this._scheduleCompletion(update)
+    }
   }
 
   // ── content ──
@@ -188,15 +204,14 @@ export class CodeMirrorEditor {
   }
 
   /**
-   * Show the compiler's diagnostics inline: an underlined range with a hover
-   * message plus a marker in the gutter. They are re-applied on every lint pass
-   * until the next compilation replaces them.
+   * Show compiler diagnostics inline: an underlined range with a hover message
+   * plus a marker in the gutter.
    * @param {Array<object>} diagnostics - Compiler diagnostics for this file.
    */
 
   setDiagnostics(diagnostics) {
-    this._compiled = diagnostics || []
-    forceLinting(this._view)
+    const { state } = this._view
+    this._view.dispatch(setCmDiagnostics(state, toEditorDiagnostics(state, diagnostics)))
   }
 
   /** @returns {{from: number, to: number}} The main selection range. */

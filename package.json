@@ -4,6 +4,7 @@
     "build:codemirror": "esbuild --bundle --minify --format=esm --log-level=warning --outfile=tino/static/js/vendor/codemirror.js tino/static/js/codemirror-entry.js"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/language": "^6.12.3",
     "@codemirror/lint": "^6.9.7",

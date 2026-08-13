@@ -1,12 +1,14 @@
-import { GitAPI, bucketPath } from './git-api.js'
+import { EditorAPI } from './editor-api.js'
+import { bucketPath } from './git-api.js'
 
 /**
  * HTTP client for the TINO REST API.
  * Wraps all backend endpoints (buckets, files, git, compile).
- * Git endpoints live in GitAPI, which this class extends.
+ * Git endpoints live in GitAPI and the editor's language tooling in EditorAPI,
+ * both of which this class inherits.
  */
 
-export class TinoAPI extends GitAPI {
+export class TinoAPI extends EditorAPI {
 
   config() {
     return this._fetch('/api/config')
@@ -182,33 +184,6 @@ export class TinoAPI extends GitAPI {
 
   compilePage(slug, path, page) {
     return this._fetch(`${bucketPath(slug)}/compile/page/${page}/${path}`)
-  }
-
-  // ── Editor tooling ──
-
-  /**
-   * Format a Typst buffer with typstyle.
-   * @param {string} slug - Bucket the buffer belongs to.
-   * @param {string} content - The (possibly unsaved) source text.
-   * @returns {Promise<{content: string}>} The formatted source.
-   */
-
-  format(slug, content) {
-    return this._json('POST', `${bucketPath(slug)}/format`, { content })
-  }
-
-  /**
-   * Check a buffer with tinymist, without saving or compiling it first.
-   * @param {string} slug - Bucket the buffer belongs to.
-   * @param {string} path - Path the buffer is edited at (resolves imports).
-   * @param {string} content - The (possibly unsaved) source text.
-   * @returns {Promise<{diagnostics: Array}>} LSP-shaped diagnostics.
-   */
-
-  lint(slug, path, content) {
-    return this._json(
-      'POST', `${bucketPath(slug)}/lint/${path}`, { content },
-    )
   }
 
   // ── Templates ──

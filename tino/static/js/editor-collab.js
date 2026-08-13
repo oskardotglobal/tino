@@ -73,6 +73,12 @@ export class EditorCollab {
     return `hsl(${hue}, ${CURSOR_SATURATION}%, ${CURSOR_LIGHTNESS}%)`
   }
 
+  /** @returns {boolean} Whether a session is connected and synced. */
+
+  get synced() {
+    return Boolean(this._session && this._session.synced)
+  }
+
   /** Tear down the current collab session. */
 
   disconnect() {

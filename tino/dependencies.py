@@ -88,7 +88,8 @@ def get_formatter_service() -> FormatterService:
 def get_lsp_service() -> LspService:
     '''Singleton LspService running one tinymist language server per bucket.'''
     return LspService(config.TINO_BUCKET_DIR, config.TINO_PACKAGE_DIR,
-                      config.TINO_FONT_DIR, config.TINO_LSP_TTL)
+                      config.TINO_FONT_DIR, config.TINO_LSP_TTL,
+                      document_text=get_collab_manager().document_text)
 
 
 @lru_cache

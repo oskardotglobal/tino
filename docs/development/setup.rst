@@ -12,7 +12,7 @@ Prerequisites
 - `typstyle <https://github.com/typstyle-rs/typstyle>`_ (optional — the editor's
   :ref:`formatting <Formatting>`)
 - `tinymist <https://github.com/Myriad-Dreamin/tinymist>`_ (optional — the
-  editor's :ref:`live error checking <Live error checking>`)
+  editor's :ref:`completion <Completion>` and :ref:`code actions <Code actions>`)
 - Git with `Git LFS <https://git-lfs.com/>`_
 
 Project setup
