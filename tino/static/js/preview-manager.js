@@ -1,7 +1,14 @@
 import { SINGLE_ITEM, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, escapeHtml } from './constants.js'
+import { PreviewPages } from './preview-pages.js'
 
 /**
- * Manages preview rendering and zoom controls.
+ * Manages preview rendering and zoom controls. The page elements themselves,
+ * and the lazy compilation of long documents, live in {@link PreviewPages}.
+ *
+ * A failed compilation never clears the pane: the last successful render stays
+ * on screen (dimmed) while the errors are reported in the editor and in the
+ * banner above the preview, so a typo mid-edit does not make a long document
+ * disappear and recompile from scratch.
  */
 
 export class PreviewManager {
@@ -10,6 +17,8 @@ export class PreviewManager {
 
   constructor(app) {
     this.app = app
+    this.pages = new PreviewPages(app, () => this.compile())
+    this._renderGen = 0
   }
 
   /** The file the preview renders: the pinned file, else the active file. */
@@ -21,7 +30,7 @@ export class PreviewManager {
   /** The rendered page elements currently in the preview pane. */
 
   get pageElements() {
-    return [...this.app.els.previewPage.querySelectorAll('.preview-svg-page')]
+    return this.pages.elements
   }
 
   /**
@@ -110,9 +119,30 @@ export class PreviewManager {
   /** Show a placeholder when the current file has no preview. */
 
   clear() {
+    this._discard()
     this.app.els.previewPage.innerHTML =
       '<p class="preview-empty">No preview available for this file.</p>'
     this.app.presentation.syncControls()
+  }
+
+  /**
+   * Drop every trace of the current preview. Called when the workspace changes
+   * underneath it (switching projects, closing all tabs) so neither pages nor
+   * diagnostics of the previous project survive into the next one.
+   */
+
+  reset() {
+    this._discard()
+    this.app.diagnostics.clear()
+    this.app.els.previewPage.innerHTML =
+      '<p class="preview-empty">Open a file to see the preview.</p>'
+    this.app.presentation.syncControls()
+  }
+
+  _discard() {
+    this._renderGen += SINGLE_ITEM
+    this.pages.reset()
+    this.app.els.previewPage.classList.remove('preview-outdated')
   }
 
   /** Compile the current .typ file via the API and render SVG pages. */
@@ -120,35 +150,53 @@ export class PreviewManager {
   async compile() {
     if (!this.app.bucket || !this.target)
       return
-    this._renderGen = (this._renderGen || 0) + SINGLE_ITEM
+    this._renderGen += SINGLE_ITEM
     const gen = this._renderGen
-    const preview = this.app.els.previewPage
-    try {
-      const result = await this.app.api.compile(this.app.bucket, this.target)
-      if (gen === this._renderGen)
-        PreviewManager._renderPages(preview, result.pages)
-    }
-    catch (err) {
-      if (gen === this._renderGen) {
-        preview.innerHTML =
-          `<pre class="preview-error">${escapeHtml(err.message)}</pre>`
-      }
-    }
-    if (gen === this._renderGen)
-      this.app.presentation.syncControls()
+    const path = this.target
+    const result = await this._runCompile(path)
+    if (!result || gen !== this._renderGen)
+      return
+    this.app.diagnostics.set(result.diagnostics || [])
+    if (result.ok)
+      this._render(path, result)
+    else
+      this._markOutdated()
+    this.app.presentation.syncControls()
   }
 
-  /** Build all SVG pages off-DOM and swap them in with a single reflow. */
+  /* Transport failures (offline, 404 for a file that vanished) are the only
+     ones that reach the preview as an exception — a document that does not
+     compile comes back as a regular response with diagnostics. */
 
-  static _renderPages(preview, pages) {
-    const fragment = document.createDocumentFragment()
-    pages.forEach(svg => {
-      const page = document.createElement('div')
-      page.className = 'preview-svg-page'
-      page.innerHTML = svg
-      fragment.appendChild(page)
-    })
-    preview.replaceChildren(fragment)
+  async _runCompile(path) {
+    try {
+      return await this.app.api.compile(this.app.bucket, path)
+    }
+    catch (err) {
+      if (!this.pages.doc) {
+        this.app.els.previewPage.innerHTML =
+          `<pre class="preview-error">${escapeHtml(err.message)}</pre>`
+      }
+      this._markOutdated()
+      return null
+    }
+  }
+
+  _markOutdated() {
+    this.app.els.previewPage.classList.add('preview-outdated')
+  }
+
+  /** Render a successful compile result, dropping the outdated marker. */
+
+  _render(path, result) {
+    this.app.els.previewPage.classList.remove('preview-outdated')
+    this.pages.render(path, result)
+  }
+
+  /** Render every page of the document, for presentation and speaker mode. */
+
+  ensureAllPages() {
+    return this.pages.ensureAll()
   }
 
   /** Download the current .typ file as a compiled PDF. */

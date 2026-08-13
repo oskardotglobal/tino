@@ -184,3 +184,27 @@ The right-hand panel shows an SVG preview of the current ``.typ`` file.
 The preview is re-rendered automatically after each save.
 
 Use the **Zoom in** / **Zoom out** buttons (or the displayed percentage) to adjust the preview scale.
+
+Compiler errors
+~~~~~~~~~~~~~~~
+
+Errors and warnings are reported **where they happen**: underlined in the editor
+on the offending line, with the message on hover and a marker in the gutter.
+They are also listed above the preview — including the ones in files you do not
+have open, such as an imported template — and clicking an entry jumps straight
+to that file and line.
+
+A document that does not compile never empties the preview: the last successful
+render stays on screen, dimmed, until the next one succeeds.
+
+Long documents
+~~~~~~~~~~~~~~
+
+Documents longer than
+:attr:`TINO_PAGED_THRESHOLD <tino.config.TINO_PAGED_THRESHOLD>` pages
+(10 by default) are compiled page by page: every change re-renders only the
+first page, so the preview updates as quickly as for a short document. The rest
+of the document is rendered in the background right after, and any page not
+ready yet is compiled on demand when you scroll to it. Compiled pages are cached
+until the document — or a file it imports — changes, so scrolling back and forth
+through a long document costs nothing.

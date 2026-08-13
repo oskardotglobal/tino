@@ -13,6 +13,12 @@
 .. automodule:: tino.services.compiler
    :members:
 
+``tino.services.diagnostics``
+-----------------------------
+
+.. automodule:: tino.services.diagnostics
+   :members:
+
 ``tino.services.file``
 ----------------------
 

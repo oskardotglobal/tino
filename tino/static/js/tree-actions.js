@@ -12,7 +12,25 @@ export class TreeActions {
   }
 
   async createFileInFolder(folderPath) {
-    await this.app.editor.createNewFile(`${folderPath}/`)
+    await this.createFile(`${folderPath}/`)
+  }
+
+  /** Prompt for a filename, create the file and open it in the editor. */
+
+  async createFile(prefix) {
+    // eslint-disable-next-line no-alert
+    const name = prompt('File name:', prefix || '')
+    if (!name || !this.app.bucket)
+      return
+    try {
+      await this.app.api.createFile(this.app.bucket, name, '')
+      await this.app.git.loadStatus()
+      await this.app.fileTree.loadFiles()
+      await this.app.editor.openFile(name)
+    }
+    catch (err) {
+      this.app.toast.error(`Could not create file: ${err.message}`)
+    }
   }
 
   async createFolder(prefix) {

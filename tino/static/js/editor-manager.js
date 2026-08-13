@@ -61,14 +61,15 @@ export class EditorManager {
     this.collab.connect(path)
 
     /* Restore the remembered caret BEFORE the UI refresh records the cursor;
-       otherwise updateCursorPos overwrites the saved position (the freshly
-       loaded doc sits at line 1) and _persistOpenState then wipes it. setCursor
-       clamps past the file end, so a now-shorter file lands on its last line. */
+       otherwise updateCursorPos overwrites the saved position (the freshly loaded
+       doc sits at line 1) and _persistOpenState then wipes it. setCursor clamps
+       past the file end, so a now-shorter file lands on its last line. */
 
     const pos = this.app.tabPositions[path]
     if (loaded.kind === 'text' && pos)
       this.app.els.editor.setCursor(pos.line, pos.col)
     this._refreshEditorUi()
+    this.app.diagnostics.apply()
     this._persistOpenState(path)
   }
 
@@ -77,7 +78,7 @@ export class EditorManager {
    * the caller applies only after confirming the open is still current. A slow
    * fetch for an abandoned tab can therefore never overwrite the active file.
    * @param {string} path - File to load.
-   * @returns {Promise<object>} `{ kind: 'text'|'binary', content?, modified? }`.
+   * @returns {Promise<object>} `{kind: 'text'|'binary', content?, modified?}`.
    */
 
   async _fetchContent(path) {
@@ -161,24 +162,6 @@ export class EditorManager {
     await this.app.preview.update()
     await this.app.git.loadStatus()
     await this.app.fileTree.loadFiles()
-  }
-
-  /** Prompt for a filename and create a new file. */
-
-  async createNewFile(prefix) {
-    // eslint-disable-next-line no-alert
-    const name = prompt('File name:', prefix || '')
-    if (!name || !this.app.bucket)
-      return
-    try {
-      await this.app.api.createFile(this.app.bucket, name, '')
-      await this.app.git.loadStatus()
-      await this.app.fileTree.loadFiles()
-      await this.openFile(name)
-    }
-    catch (err) {
-      this.app.toast.error(`Could not create file: ${err.message}`)
-    }
   }
 
   /** Close a tab and switch to an adjacent one if needed. */
@@ -272,13 +255,15 @@ export class EditorManager {
       setTimeout(() => this.saveCurrentFile(), cfg || SAVE_DEBOUNCE_MS)
   }
 
-  /** Reset editor state when switching buckets. */
+  /* Reset the editor when switching buckets or closing every tab. The preview
+     goes with it: its pages and diagnostics belong to what is being left. */
 
   resetState() {
     this.app.pinnedPreview = null
     this._clearOpenState()
     this._showEmptyState()
     this.app.els.tabBar.innerHTML = ''
+    this.app.preview.reset()
   }
 
   _clearOpenState() {

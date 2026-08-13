@@ -52,7 +52,10 @@ All persistent state lives on the filesystem — no database is required.
     │   │   ├── .meta.yml         ← bucket metadata (description, access rules)
     │   │   └── *.typ, img/, …   ← source files
     │   └── packages/             ← TINO_PACKAGE_DIR (local Typst packages)
+    ├── cache/                    ← TINO_CACHE_DIR (compiled preview pages)
     └── fonts/                    ← TINO_FONT_DIR (custom fonts)
+
+The cache is derived data: deleting it costs one recompilation per document.
 
 Request lifecycle
 -----------------

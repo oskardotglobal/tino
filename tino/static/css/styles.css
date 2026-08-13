@@ -894,6 +894,72 @@ html, body {
   border: none;
 }
 
+/* CodeMirror assumes a light theme for its tooltips (it only switches colours on
+   its own dark theme, which the app does not use): the popup is painted near
+   white by `&light .cm-tooltip` while the text inherits the editor's colour,
+   i.e. white on white in dark mode. The lint popup is a `.cm-tooltip` wrapper
+   around a `ul.cm-tooltip-lint`, so the background has to be bound on the
+   wrapper — with both editor classes in the selector, to outweigh CodeMirror's
+   own `.cm-editor.cm-light .cm-tooltip` rule. */
+
+.editor .cm-editor .cm-tooltip {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* The tooltip arrow is drawn as two borders in CodeMirror's own colours. */
+
+.editor .cm-editor .cm-tooltip-above .cm-tooltip-arrow::after {
+  border-top-color: var(--bg-secondary);
+}
+
+.editor .cm-editor .cm-tooltip-below .cm-tooltip-arrow::after {
+  border-bottom-color: var(--bg-secondary);
+}
+
+.editor .cm-editor .cm-tooltip-above .cm-tooltip-arrow::before {
+  border-top-color: var(--border);
+}
+
+.editor .cm-editor .cm-tooltip-below .cm-tooltip-arrow::before {
+  border-bottom-color: var(--border);
+}
+
+.editor .cm-editor .cm-tooltip-lint {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.editor .cm-editor .cm-diagnostic {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: pre-wrap;
+  padding: 5px 8px;
+  border-left: 3px solid transparent;
+}
+
+.editor .cm-editor .cm-diagnostic-error {
+  border-left-color: var(--cd-red-50);
+}
+
+.editor .cm-editor .cm-diagnostic-warning {
+  border-left-color: var(--cd-yellow-60);
+}
+
+.editor .cm-editor .cm-diagnosticSource {
+  color: var(--text-muted);
+}
+
+.editor .cm-panel.cm-panel-lint ul li[aria-selected] {
+  background: var(--bg-hover);
+}
+
 .editor .cm-panel.cm-gotoLine {
   padding: 6px 8px;
 }
@@ -1253,6 +1319,70 @@ html, body {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Pages of a long document that have not been compiled yet: the box keeps the
+   layout stable while the SVG is on its way. */
+
+.preview-svg-page-pending {
+  min-height: 400px;
+}
+
+/* The last successful render, kept on screen while the current source does not
+   compile — dimmed so it never passes for an up-to-date preview. */
+
+.preview-outdated {
+  opacity: 0.45;
+}
+
+/* ── Compiler diagnostics ── */
+
+.preview-diagnostics {
+  flex-shrink: 0;
+  max-height: 30%;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.preview-diagnostics.hidden {
+  display: none;
+}
+
+.diagnostic {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  white-space: pre-wrap;
+}
+
+.diagnostic-error {
+  border-left-color: var(--cd-red-50);
+}
+
+.diagnostic-warning {
+  border-left-color: var(--cd-yellow-60);
+}
+
+.diagnostic[data-path] {
+  cursor: pointer;
+}
+
+.diagnostic[data-path]:hover {
+  background: var(--bg-hover);
+}
+
+.diagnostic-where {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.diagnostic-message {
+  color: var(--text-primary);
 }
 
 .preview-error {

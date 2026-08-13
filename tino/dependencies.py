@@ -72,7 +72,8 @@ def get_search_service() -> SearchService:
 def get_compiler_service() -> CompilerService:
     '''Singleton CompilerService bound to the configured bucket directory.'''
     return CompilerService(config.TINO_BUCKET_DIR, config.TINO_PACKAGE_DIR,
-                           config.TINO_FONT_DIR)
+                           config.TINO_FONT_DIR, config.TINO_CACHE_DIR,
+                           config.TINO_PAGED_THRESHOLD)
 
 
 @lru_cache

@@ -168,8 +168,20 @@ export class TinoAPI extends GitAPI {
 
   // ── Compile ──
 
+  /**
+   * Compile a document. Short documents come back with every page inlined;
+   * long ones carry only their first page and are flagged `paged`, their
+   * remaining pages being fetched with {@link TinoAPI#compilePage}.
+   */
+
   compile(slug, path) {
     return this._fetch(`${bucketPath(slug)}/compile/svg/${path}`)
+  }
+
+  /** Compile (or fetch from the server cache) one page of a long document. */
+
+  compilePage(slug, path, page) {
+    return this._fetch(`${bucketPath(slug)}/compile/page/${page}/${path}`)
   }
 
   // ── Templates ──

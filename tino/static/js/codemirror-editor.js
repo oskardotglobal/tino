@@ -9,7 +9,6 @@ import {
   drawSelection,
   foldGutter,
   foldKeymap,
-  gotoLine,
   history,
   historyKeymap,
   indentOnInput,
@@ -17,13 +16,15 @@ import {
   indentWithTab,
   keymap,
   lineNumbers,
+  lintGutter,
   panels,
   searchKeymap,
-  selectNextOccurrence,
+  setDiagnostics as setCmDiagnostics,
 } from './vendor/codemirror.js'
+import { editorBindings, keymapExtension } from './codemirror-keymaps.js'
 import { typst, typstKeymap } from './codemirror-typst.js'
 import { SINGLE_ITEM } from './constants.js'
-import { keymapExtension } from './codemirror-keymaps.js'
+import { toEditorDiagnostics } from './codemirror-diagnostics.js'
 
 /**
  * Editor controller around a CodeMirror 6 EditorView. Owns the view, its
@@ -125,6 +126,7 @@ export class CodeMirrorEditor {
         this._panels(),
         this._wrap.of(EditorView.lineWrapping),
         lineNumbers(),
+        lintGutter(),
         drawSelection(),
         foldGutter(),
         codeFolding(),
@@ -136,9 +138,7 @@ export class CodeMirrorEditor {
         this._collab.of([]),
         typst(),
         keymap.of([
-          CodeMirrorEditor._saveBinding(),
-          CodeMirrorEditor._gotoLineBinding(),
-          CodeMirrorEditor._selectNextBinding(),
+          ...editorBindings,
           ...typstKeymap,
           indentWithTab,
           ...searchKeymap,
@@ -149,37 +149,6 @@ export class CodeMirrorEditor {
         EditorView.updateListener.of(update => this._onUpdate(update)),
       ],
     })
-  }
-
-  /*
-   * Files save themselves after a short idle delay, so Mod-s has nothing to do.
-   * It is still bound (and reported as handled) purely to swallow the browser's
-   * "save page as" dialog, which would otherwise fire inside the editor.
-   */
-
-  static _saveBinding() {
-    return { key: 'Mod-s', preventDefault: true, run: () => true }
-  }
-
-  static _gotoLineBinding() {
-    return { key: 'Mod-g', preventDefault: true, run: view => gotoLine(view) }
-  }
-
-  /*
-   * Mod-d selects the next occurrence (multi-cursor). Always report the key as
-   * handled so the browser's Mod-d (bookmark) is suppressed even when there is
-   * no further occurrence — otherwise the bookmark dialog leaks through.
-   */
-
-  static _selectNextBinding() {
-    return {
-      key: 'Mod-d',
-      preventDefault: true,
-      run: view => {
-        selectNextOccurrence(view)
-        return true
-      },
-    }
   }
 
   _onUpdate(update) {
@@ -218,6 +187,17 @@ export class CodeMirrorEditor {
       annotations: [_programmatic.of(true)],
       changes: { from: 0, insert: text, to: length },
     })
+  }
+
+  /**
+   * Show compiler diagnostics inline: an underlined range with a hover message
+   * plus a marker in the gutter.
+   * @param {Array<object>} diagnostics - Compiler diagnostics for this file.
+   */
+
+  setDiagnostics(diagnostics) {
+    const { state } = this._view
+    this._view.dispatch(setCmDiagnostics(state, toEditorDiagnostics(state, diagnostics)))
   }
 
   /** @returns {{from: number, to: number}} The main selection range. */

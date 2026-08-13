@@ -16,6 +16,7 @@ export {
   lineNumbers,
   panels,
 } from '@codemirror/view'
+export { lintGutter, setDiagnostics } from '@codemirror/lint'
 export { Doc } from 'yjs'
 export { WebsocketProvider } from 'y-websocket'
 export { yCollab } from 'y-codemirror.next'
