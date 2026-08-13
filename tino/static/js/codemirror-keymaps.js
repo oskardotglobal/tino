@@ -1,4 +1,4 @@
-import { helix, vim } from './vendor/codemirror.js'
+import { gotoLine, helix, selectNextOccurrence, vim } from './vendor/codemirror.js'
 
 /**
  * The modal keymaps the editor can run, keyed by the value stored in the
@@ -19,3 +19,34 @@ const KEYMAPS = {
  */
 
 export const keymapExtension = mode => (KEYMAPS[mode] || KEYMAPS.default)()
+
+/*
+ * Files save themselves after a short idle delay, so Mod-s has nothing to do.
+ * It is still bound (and reported as handled) purely to swallow the browser's
+ * "save page as" dialog, which would otherwise fire inside the editor.
+ */
+
+const _saveBinding = { key: 'Mod-s', preventDefault: true, run: () => true }
+
+const _gotoLineBinding = {
+  key: 'Mod-g', preventDefault: true, run: view => gotoLine(view),
+}
+
+/*
+ * Mod-d selects the next occurrence (multi-cursor). Always report the key as
+ * handled so the browser's Mod-d (bookmark) is suppressed even when there is no
+ * further occurrence — otherwise the bookmark dialog leaks through.
+ */
+
+const _selectNextBinding = {
+  key: 'Mod-d',
+  preventDefault: true,
+  run: view => {
+    selectNextOccurrence(view)
+    return true
+  },
+}
+
+/** The editor's own key bindings, taking precedence over the standard ones. */
+
+export const editorBindings = [_saveBinding, _gotoLineBinding, _selectNextBinding]
