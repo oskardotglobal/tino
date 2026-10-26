@@ -21,7 +21,8 @@ WORKDIR /usr/src
 
 COPY build/*.whl .
 COPY tino/gitattributes /etc/gitattributes
-RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lfs xz-utils \
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/tino-entrypoint
+RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lfs openssh-client xz-utils \
     && pip install --no-cache-dir *.whl \
     && rm -f *.whl \
     && case "$TARGETARCH/$TARGETVARIANT" in \
@@ -89,5 +90,5 @@ EXPOSE 5000
 HEALTHCHECK --start-period=10s --start-interval=2s --interval=10s --timeout=10s --retries=3 \
     CMD curl -sfL http://127.0.0.1:5000/health
 
-ENTRYPOINT ["gunicorn"]
+ENTRYPOINT ["tino-entrypoint"]
 CMD ["-k", "uvicorn.workers.UvicornWorker", "-w", "1", "-b", "0.0.0.0:5000", "--worker-tmp-dir", "/tmp", "--chdir", "/tmp", "tino:create_app()"]

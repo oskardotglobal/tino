@@ -67,4 +67,5 @@ available to users with the **Committer** role:
    authentication. Push and pull run as the server process and use its git
    configuration — a ``.netrc`` for HTTP(S) remotes, or an SSH key for SSH
    remotes. Every committer of a project therefore pushes with the same
-   server-side identity.
+   server-side identity. The Docker image generates that SSH key for you, see
+   :ref:`operations/deployment:Git over SSH`.

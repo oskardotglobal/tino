@@ -103,6 +103,24 @@ Then bring the stack up with:
 
     docker compose up -d
 
+Git over SSH
+~~~~~~~~~~~~
+
+The image ships an SSH client, so project :ref:`remotes <usage/git:Remotes>` can use SSH URLs (e.g. ``git@github.com:example/project.git``).
+
+On first start, the container generates an **ed25519 key pair** in ``/data/ssh`` and logs its public key on every start:
+
+.. code-block:: text
+
+    SSH public key (add it as a deploy key to your git remotes):
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA… tino
+
+Add that key as a deploy key (with write access, for pushing) to each remote repository.
+The key lives in the data volume, so it survives container re-creation; set ``TINO_SSH_DIR`` to keep it elsewhere.
+
+Host keys are trusted on first contact and remembered in ``/data/ssh/known_hosts``.
+To use your own SSH options instead, set ``GIT_SSH_COMMAND`` — the entrypoint leaves it untouched when present.
+
 .. _Standalone:
 
 📦 Standalone (without Docker)
