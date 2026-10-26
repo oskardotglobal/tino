@@ -3,9 +3,8 @@
 🔤 Custom fonts
 ---------------
 
-TINO supports custom fonts for Typst compilations. Fonts placed in the
-:attr:`TINO_FONT_DIR <tino.config.TINO_FONT_DIR>` directory are
-automatically available to all documents via the ``--font-path`` flag.
+TINO supports custom fonts for Typst compilations.
+Fonts placed in the :attr:`TINO_FONT_DIR <tino.config.TINO_FONT_DIR>` directory are automatically available to all documents via the ``--font-path`` flag.
 
 .. note::
 
@@ -28,8 +27,7 @@ Administrators can manage fonts from the settings dialog:
 Providing fonts via Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Fonts can also be provided at container level without the UI, for example
-via a bind mount:
+Fonts can also be provided at container level without the UI, for example via a bind mount:
 
 .. code-block:: bash
 

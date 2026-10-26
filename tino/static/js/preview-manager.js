@@ -1,5 +1,6 @@
-import { SINGLE_ITEM, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, escapeHtml } from './constants.js'
+import { SINGLE_ITEM, escapeHtml } from './constants.js'
 import { PreviewPages } from './preview-pages.js'
+import { PreviewZoom } from './preview-zoom.js'
 
 /**
  * Manages preview rendering and zoom controls. The page elements themselves,
@@ -71,6 +72,8 @@ export class PreviewManager {
     this._renderPinControls()
     document.getElementById('btn-pdf')
       .classList.toggle('hidden', !isTyp)
+    document.getElementById('btn-docx')
+      .classList.toggle('hidden', !isTyp || !this.app.config.docxExport)
     if (isTyp)
       await this.compile()
     else
@@ -199,47 +202,33 @@ export class PreviewManager {
     return this.pages.ensureAll()
   }
 
-  /** Download the current .typ file as a compiled PDF. */
+  /**
+   * Download the current .typ file compiled to a document format.
+   * @param {string} format - `pdf` or `docx`.
+   */
 
-  downloadPdf() {
+  download(format) {
     if (!this.app.bucket || !this.target)
       return
     const slug = encodeURIComponent(this.app.bucket)
     const path = this.target
-    const url = `/api/buckets/${slug}/compile/pdf/${path}`
+    const url = `api/buckets/${slug}/compile/${format}/${path}`
     const link = document.createElement('a')
     link.href = url
     link.download = ''
     link.click()
   }
 
-  /** Bind zoom in/out and PDF download buttons. */
+  /** Bind zoom (buttons and Ctrl/⌘ + wheel), PDF/DOCX download and pin buttons. */
 
   bindZoom() {
-    const {previewPage, zoomLabel} = this.app.els
-
-    document.getElementById('btn-zoom-in')
-      .addEventListener('click', () => {
-        if (this.app.zoom < ZOOM_MAX) {
-          this.app.zoom += ZOOM_STEP
-          previewPage.style.transform =
-            `scale(${this.app.zoom / 100})`
-          zoomLabel.textContent = `${this.app.zoom}%`
-        }
-      })
-
-    document.getElementById('btn-zoom-out')
-      .addEventListener('click', () => {
-        if (this.app.zoom > ZOOM_MIN) {
-          this.app.zoom -= ZOOM_STEP
-          previewPage.style.transform =
-            `scale(${this.app.zoom / 100})`
-          zoomLabel.textContent = `${this.app.zoom}%`
-        }
-      })
+    new PreviewZoom(this.app).bind()
 
     document.getElementById('btn-pdf')
-      .addEventListener('click', () => this.downloadPdf())
+      .addEventListener('click', () => this.download('pdf'))
+
+    document.getElementById('btn-docx')
+      .addEventListener('click', () => this.download('docx'))
 
     document.getElementById('btn-pin-preview')
       .addEventListener('click', () => this.togglePin())

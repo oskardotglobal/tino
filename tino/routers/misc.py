@@ -65,6 +65,7 @@ async def frontend_config():
         'languageServer': _TINYMIST_VERSION is not None,
         'formatting': _TYPSTYLE_VERSION is not None,
         'repoUrl': config.TINO_REPO_URL,
+        'docxExport': CompilerService.pandoc_available(),
         'saveDebounceMs': config.TINO_SAVE_DEBOUNCE_MS,
         'version': _APP_VERSION,
     }

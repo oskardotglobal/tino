@@ -9,6 +9,7 @@ import {
 } from './vendor/codemirror.js'
 import { COMPLETE_DELAY_MS, SINGLE_ITEM } from './constants.js'
 import { COMPLETION_TRIGGERS } from './codemirror-typst.js'
+import { dispatchWithFreshHistory } from './codemirror-history.js'
 import { editorExtensions } from './codemirror-extensions.js'
 import { keymapExtension } from './codemirror-keymaps.js'
 import { toEditorDiagnostics } from './codemirror-diagnostics.js'
@@ -191,13 +192,14 @@ export class CodeMirrorEditor {
   /**
    * Replace the whole document programmatically (e.g. loading a file or
    * adopting synced collab content). Does not emit a change notification;
-   * call signalChange() when such a replacement should be persisted.
+   * call signalChange() when such a replacement should be persisted. Starts a
+   * fresh undo history (see dispatchWithFreshHistory).
    * @param {string} text - The new document content.
    */
 
   setContent(text) {
     const { length } = this._view.state.doc
-    this._view.dispatch({
+    dispatchWithFreshHistory(this._view, {
       annotations: [_programmatic.of(true)],
       changes: { from: 0, insert: text, to: length },
     })

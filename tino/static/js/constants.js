@@ -22,6 +22,17 @@ export const ZOOM_MIN = 50
 
 export const ZOOM_MAX = 200
 
+/**
+ * Ctrl/⌘ + wheel zoom factor per scrolled pixel (exponential): one mouse wheel
+ * notch (~100 px) zooms by roughly 15%.
+ */
+
+export const ZOOM_WHEEL_SENSITIVITY = 0.0015
+
+/** Pixels per line for wheel events reported in lines (e.g. Firefox). */
+
+export const WHEEL_LINE_PX = 16
+
 /** Minimum drag width in px for the left (file tree) panel. */
 
 export const PANEL_MIN_WIDTH_LEFT = 200
@@ -75,6 +86,10 @@ export const ISO_DATETIME_LEN = 19
 /** Number of hex characters shown for abbreviated commit SHAs. */
 
 export const SHA_SHORT_LEN = 7
+
+/** Debounce timeout for file-tree search-as-you-type. */
+
+export const DEBOUNCE_MS = 150
 
 /** Material Symbols icon for a file node in the tree. */
 

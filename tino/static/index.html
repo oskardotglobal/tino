@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="css/vendor/colours.css">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="/api/theme.css">
+  <link rel="stylesheet" href="api/theme.css">
   <script>
     /* Apply the saved theme before the first paint. Doing it later (once the
        modules have loaded) renders the whole app — including the editor and
@@ -25,7 +25,7 @@
 <body>
   <header class="toolbar">
     <div class="toolbar-left">
-      <img class="logo" id="logo" src="/img/logo.svg">
+      <img class="logo" id="logo" src="img/logo.svg">
       <button class="toolbar-btn" id="btn-toggle-explorer" title="Toggle file explorer">
         <span class="material-symbols-outlined">left_panel_close</span>
       </button>
@@ -183,14 +183,21 @@
           </ul>
         </div>
         <button class="btn-pdf hidden" id="btn-pdf" title="Download PDF">
-          <span class="material-symbols-outlined">download</span>
-          Export
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          PDF
+        </button>
+        <button class="btn-pdf hidden" id="btn-docx" title="Download DOCX">
+          <span class="material-symbols-outlined">description</span>
+          DOCX
         </button>
         <div class="preview-controls">
+          <button class="icon-btn" id="btn-zoom-fit" title="Fit to width">
+            <span class="material-symbols-outlined">fit_width</span>
+          </button>
           <button class="icon-btn" id="btn-zoom-out" title="Zoom out">
             <span class="material-symbols-outlined">zoom_out</span>
           </button>
-          <span class="zoom-level" id="zoom-level">100%</span>
+          <button class="zoom-level" id="zoom-level" title="Reset zoom to 100%">100%</button>
           <button class="icon-btn" id="btn-zoom-in" title="Zoom in">
             <span class="material-symbols-outlined">zoom_in</span>
           </button>

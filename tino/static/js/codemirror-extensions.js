@@ -8,8 +8,6 @@ import {
   drawSelection,
   foldGutter,
   foldKeymap,
-  history,
-  historyKeymap,
   indentOnInput,
   indentUnit,
   indentWithTab,
@@ -20,16 +18,13 @@ import {
 } from './vendor/codemirror.js'
 import { codeActionBinding, editorBindings, formatBinding } from './codemirror-keymaps.js'
 import { typst, typstKeymap } from './codemirror-typst.js'
+import { undoHistory } from './codemirror-history.js'
 
 /**
  * The CodeMirror extension set the editor runs with, kept apart from the
  * editor controller (codemirror-editor.js) so the controller stays about the
  * view and its public API.
  */
-
-/** Undo/redo history — always active, so Vim's `u`, Ctrl-r and Ctrl-Z agree. */
-
-const historyExt = () => [history(), keymap.of(historyKeymap)]
 
 /**
  * Build the editor's full extension list.
@@ -60,7 +55,7 @@ export const editorExtensions = (
   indentUnit.of('  '),
   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
-  historyExt(),
+  undoHistory(),
   compartments.collab.of([]),
   typst(),
   keymap.of([

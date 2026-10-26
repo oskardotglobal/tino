@@ -3,8 +3,7 @@
 ⬆️ Upgrade
 ==========
 
-This page lists the **actions required** when upgrading TINO between versions —
-configuration changes, renamed variables, and anything that needs attention before or after pulling a new image.
+This page lists the **actions required** when upgrading TINO between versions — configuration changes, renamed variables, and anything that needs attention before or after pulling a new image.
 
 It is not a full changelog; only changes that ask something of you are recorded here.
 
@@ -25,6 +24,29 @@ The experimental MCP (Model Context Protocol) server has been **removed** (see :
 - Drop ``TINO_MCP_ENABLED``, ``TINO_MCP_INSTRUCTIONS``, and ``TINO_MCP_COMMIT_ENABLED`` from your configuration — they are no longer read.
 - The per-project *MCP Instructions* field is gone from the project settings dialog and from the ``/api/buckets`` payloads. Existing ``mcp_instructions`` keys in a project's ``.meta.yml`` are ignored and are dropped on the next metadata update; no manual migration is required.
 - Any MCP clients pointed at your instance will stop working. Use the :ref:`REST API` with an :ref:`API key <usage/authentication:API keys>` instead.
+
+Compile errors are returned as structured diagnostics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a compilation fails, the export endpoints (``GET /api/buckets/{slug}/compile/pdf/…`` and ``…/compile/docx/…``) still respond with ``422``, but the ``detail`` is now an **object** instead of a string:
+
+.. code-block:: json
+
+    {
+      "detail": {
+        "message": "main.typ:3:2: error: unknown variable: foo",
+        "diagnostics": [
+          {"severity": "error", "message": "unknown variable: foo", "path": "main.typ", "line": 3, "column": 2}
+        ]
+      }
+    }
+
+- ``message`` holds the compiler output; file paths are relative to the bucket.
+- ``diagnostics`` lists every error and warning.
+  ``path``, ``line`` and ``column`` are ``null`` when Typst reports no position.
+
+The bundled web UI already handles the new format.
+If you call the compile endpoints from scripts or integrations (e.g. with an :ref:`API key <usage/authentication:API keys>`) and read ``detail`` as a string, use ``detail.message`` instead.
 
 1.20.0
 ------

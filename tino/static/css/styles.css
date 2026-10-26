@@ -1371,6 +1371,8 @@ html, body {
   font-weight: 600;
   cursor: pointer;
   transition: opacity var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-pdf:hover {
@@ -1379,13 +1381,33 @@ html, body {
 
 .btn-pdf .material-symbols-outlined {
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .zoom-level {
-  font-size: 11px;
   min-width: 36px;
+  height: 24px;
+  padding: 0 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
   text-align: center;
   color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.zoom-level:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* The title takes all free space, so the buttons stay packed against the zoom
+   controls and don't move when a pinned filename appears (it truncates). */
+.preview-panel .panel-header {
+  gap: 8px;
 }
 
 .preview-pin-label {
@@ -1398,7 +1420,8 @@ html, body {
   color: var(--accent);
 }
 
-#btn-pin-preview.active {
+#btn-pin-preview.active,
+#btn-zoom-fit.active {
   color: var(--accent);
   background: var(--bg-hover);
 }
@@ -1407,15 +1430,16 @@ html, body {
   flex: 1;
   overflow: auto;
   display: flex;
-  justify-content: center;
+
+  /* `safe`: a zoomed page wider than the viewport aligns to the start instead
+     of overflowing past the left edge, where it couldn't be scrolled to. */
+  justify-content: safe center;
   padding: 24px;
   background: var(--bg-tertiary);
 }
 
 .preview-page {
   width: 595px;
-  transform-origin: top center;
-  transition: transform var(--transition);
   flex-shrink: 0;
 }
 

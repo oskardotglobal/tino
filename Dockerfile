@@ -8,6 +8,10 @@ ARG TYPSTYLE_VERSION=0.15.1
 
 # renovate: github-releases depName=Myriad-Dreamin/tinymist
 ARG TINYMIST_VERSION=0.15.2
+# Used for the DOCX export; only published for amd64 & arm64, so other
+# platforms ship without it and the export is hidden in the UI.
+# renovate: github-releases depName=jgm/pandoc
+ARG PANDOC_VERSION=3.12.1
 
 # Populated automatically by BuildKit/buildx from the target platform.
 ARG TARGETARCH
@@ -57,6 +61,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl git git-lf
        else \
          echo "No typstyle binary for '${TARGETARCH}/${TARGETVARIANT}' — formatting disabled" >&2; \
        fi \
+    && case "$TARGETARCH" in \
+         amd64|arm64) curl -sSfL https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-${TARGETARCH}.tar.gz \
+                        | tar -xz --strip-components=2 -C /usr/local/bin pandoc-${PANDOC_VERSION}/bin/pandoc ;; \
+         *) echo "No pandoc binary for target platform '${TARGETARCH}', DOCX export disabled" >&2 ;; \
+       esac \
     && git lfs install --system \
     && git config --system core.attributesFile /etc/gitattributes \
     && apt-get purge -y --auto-remove xz-utils \

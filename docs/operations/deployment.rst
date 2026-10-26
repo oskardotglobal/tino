@@ -111,12 +111,10 @@ Then bring the stack up with:
 .. warning::
 
    Running TINO without Docker is **not recommended and unsupported**.
-   You are responsible for managing Python, the Typst CLI, process
-   supervision, and upgrades yourself.  The Docker image is the only
-   officially supported deployment method.
+   You are responsible for managing Python, the Typst CLI, process supervision, and upgrades yourself.
+   The Docker image is the only officially supported deployment method.
 
-If you cannot use Docker, TINO can be installed as a regular Python package
-and run with Gunicorn.
+If you cannot use Docker, TINO can be installed as a regular Python package and run with Gunicorn.
 
 Prerequisites
 ~~~~~~~~~~~~~
@@ -129,6 +127,7 @@ Prerequisites
   (optional — without it the editor's :ref:`completion <Completion>` and
   :ref:`code actions <Code actions>` are disabled)
 - Git with `Git LFS <https://git-lfs.com/>`_
+- Optional: `pandoc <https://pandoc.org/>`_ on ``$PATH`` for the experimental :ref:`DOCX export <usage/editor:DOCX export>`
 
 Building the wheel
 ~~~~~~~~~~~~~~~~~~
@@ -146,8 +145,7 @@ Installing
 
     pip install build/tino-*.whl
 
-This installs TINO and all its Python dependencies (including Gunicorn and
-Uvicorn).
+This installs TINO and all its Python dependencies (including Gunicorn and Uvicorn).
 
 Running
 ~~~~~~~
@@ -170,8 +168,7 @@ This is the same command the Docker image runs internally.
 .. hint::
 
     See :ref:`Configuration` for the full list of environment variables.
-    Make sure :attr:`TINO_DATA_DIR <tino.config.TINO_DATA_DIR>` points to a
-    writable directory that is backed up regularly.
+    Make sure :attr:`TINO_DATA_DIR <tino.config.TINO_DATA_DIR>` points to a writable directory that is backed up regularly.
 
 .. _Integration:
 
@@ -185,6 +182,25 @@ TINO is typically deployed behind a reverse proxy (e.g. nginx, Traefik, Caddy) t
 
 Set :attr:`TINO_BASE_URL <tino.config.TINO_BASE_URL>` to the public ``https://`` URL the proxy serves TINO on.
 It is used to build the OIDC redirect URLs.
+
+Sub-path
+^^^^^^^^
+
+To serve TINO under a sub-path instead of its own host name (e.g. ``https://example.com/tino``), include the path in :attr:`TINO_BASE_URL <tino.config.TINO_BASE_URL>`.
+TINO derives its :attr:`TINO_ROOT_PATH <tino.config.TINO_ROOT_PATH>` from it.
+The proxy may forward requests with the prefix (``/tino/login``) or strip it (``/login``); TINO accepts both.
+
+.. code-block:: nginx
+
+    location /tino/ {
+        proxy_pass http://tino:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+The OIDC redirect URIs then include the prefix as well (e.g. ``https://example.com/tino/oidc/callback``).
 
 OIDC
 ~~~~
@@ -208,9 +224,7 @@ Register a new client (application) with your OIDC provider:
        https://tino.example.com/login
 
 4. Ensure the following **scopes** are enabled: ``openid``, ``email``, ``groups``, ``profile``.
-5. Make sure the user's group memberships are exposed under a claim (see
-   :attr:`TINO_OIDC_GROUPS_CLAIM <tino.config.TINO_OIDC_GROUPS_CLAIM>`), either in
-   the **ID token** or from the **UserInfo endpoint** (TINO will merge them).
+5. Make sure the user's group memberships are exposed under a claim (see :attr:`TINO_OIDC_GROUPS_CLAIM <tino.config.TINO_OIDC_GROUPS_CLAIM>`), either in the **ID token** or from the **UserInfo endpoint** (TINO will merge them).
 6. Make sure a user matches an admin group (see :attr:`TINO_ADMIN_GROUPS <tino.config.TINO_ADMIN_GROUPS>`)
 7. Set the :attr:`TINO_OIDC_CLIENT_SECRET <tino.config.TINO_OIDC_CLIENT_SECRET>` to the **client secret**
 

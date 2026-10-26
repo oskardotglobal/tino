@@ -43,7 +43,7 @@ const bindDownloadButton = app => {
         return
       const slug = encodeURIComponent(app.bucket)
       const link = document.createElement('a')
-      link.href = `/api/buckets/${slug}/files/download`
+      link.href = `api/buckets/${slug}/files/download`
       link.download = ''
       link.click()
     })
@@ -158,7 +158,7 @@ const bindTabBar = app => {
 const bindLogout = () => {
   document.getElementById('btn-logout')
     .addEventListener('click', () => {
-      window.location.href = '/logout'
+      window.location.href = 'logout'
     })
 }
 

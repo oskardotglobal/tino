@@ -6,9 +6,7 @@
 TINO supports local `Typst packages <https://github.com/typst/packages>`_ for
 sharing reusable libraries and templates across projects.
 
-Local packages are stored in the :attr:`TINO_PACKAGE_DIR <tino.config.TINO_PACKAGE_DIR>`
-directory, which defaults to a ``packages`` sub-directory inside the
-:attr:`TINO_BUCKET_DIR <tino.config.TINO_BUCKET_DIR>`.
+Local packages are stored in the :attr:`TINO_PACKAGE_DIR <tino.config.TINO_PACKAGE_DIR>` directory, which defaults to a ``packages`` sub-directory inside the :attr:`TINO_BUCKET_DIR <tino.config.TINO_BUCKET_DIR>`.
 
 .. hint::
 
@@ -42,8 +40,7 @@ The ``typst.toml`` file contains the package metadata:
     authors     = ["Your Name"]
     description = "A shared library for my team."
 
-The ``entrypoint`` field points to the main ``.typ`` file that is loaded when the
-package is imported.
+The ``entrypoint`` field points to the main ``.typ`` file that is loaded when the package is imported.
 
 Using a package
 ~~~~~~~~~~~~~~~
@@ -54,14 +51,12 @@ Once a package is in the package directory, any project can import it:
 
     #import "@local/mylib:1.0.0": *
 
-The namespace (``local`` in this example) must match the directory name under
-the package directory.
+The namespace (``local`` in this example) must match the directory name under the package directory.
 
 Creating a template
 ~~~~~~~~~~~~~~~~~~~
 
-A package can also act as a template by adding a ``[template]`` section to
-``typst.toml``:
+A package can also act as a template by adding a ``[template]`` section to ``typst.toml``:
 
 .. code-block:: toml
 

@@ -19,11 +19,8 @@ Tabs are persisted across page reloads.
 Syntax highlighting
 ~~~~~~~~~~~~~~~~~~~~~
 
-``.typ`` files are highlighted with a Typst-aware grammar: comments, strings,
-keywords (``#let``, ``#show``, ``#import``, …), function calls, headings,
-strong and emphasis, math, labels and references, numbers, and punctuation each
-get their own colour. The palette is drawn from the corporate-design colours
-and adapts to the active :ref:`theme <Theming>` (dark and light).
+``.typ`` files are highlighted with a Typst-aware grammar: comments, strings, keywords (``#let``, ``#show``, ``#import``, …), function calls, headings, strong and emphasis, math, labels and references, numbers, and punctuation each get their own colour.
+The palette is drawn from the corporate-design colours and adapts to the active :ref:`theme <Theming>` (dark and light).
 
 Formatting toolbar
 ~~~~~~~~~~~~~~~~~~~~
@@ -81,14 +78,11 @@ For the full syntax reference, see the `Typst documentation <https://typst.app/d
 Indentation
 ~~~~~~~~~~~
 
-The editor indents structurally. Pressing :kbd:`Enter` keeps the surrounding
-indentation, adds a level after an opening bracket (``(``, ``[`` or ``{``), and
-a line that begins with a closing bracket snaps back to match its opener. Plain
-prose is left at its current indentation.
+The editor indents structurally. 
+Pressing :kbd:`Enter` keeps the surrounding indentation, adds a level after an opening bracket (``(``, ``[`` or ``{``), and a line that begins with a closing bracket snaps back to match its opener. 
+Plain prose is left at its current indentation.
 
-Lists continue automatically: pressing :kbd:`Enter` on a list item starts the
-next item (numbered markers increment), while pressing :kbd:`Enter` on an empty
-item ends the list.
+Lists continue automatically: pressing :kbd:`Enter` on a list item starts the next item (numbered markers increment), while pressing :kbd:`Enter` on an empty item ends the list.
 
 Keyboard shortcuts
 ~~~~~~~~~~~~~~~~~~
@@ -120,6 +114,8 @@ Keyboard shortcuts
      - Show the :ref:`code actions <Code actions>` for the selection.
    * - :kbd:`Shift+Alt+F`
      - Format the document (see :ref:`Formatting`).
+   * - :kbd:`Ctrl` / :kbd:`⌘` + scroll
+     - Zoom the preview around the mouse cursor.
 
 .. _Formatting:
 
@@ -200,9 +196,8 @@ cannot collide with someone editing that file at the time.
 Folding and brackets
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Collapse a ``{…}`` or ``[…]`` block from the fold gutter beside the line
-numbers, and click again to expand it. When the cursor sits next to a bracket,
-its matching partner is highlighted.
+Collapse a ``{…}`` or ``[…]`` block from the fold gutter beside the line numbers, and click again to expand it. 
+When the cursor sits next to a bracket, its matching partner is highlighted.
 
 Modal keybindings
 ~~~~~~~~~~~~~~~~~
@@ -273,7 +268,10 @@ Preview
 The right-hand panel shows an SVG preview of the current ``.typ`` file.
 The preview is re-rendered automatically after each save.
 
-Use the **Zoom in** / **Zoom out** buttons (or the displayed percentage) to adjust the preview scale.
+Use the **Zoom in** / **Zoom out** buttons to adjust the preview scale; the content at the centre of the preview stays in place.
+Click the displayed percentage to reset the zoom to 100%.
+**Fit to width** zooms the page to fill the preview's width, and keeps it fitted while you resize the panel, until you zoom manually again.
+To zoom around a specific spot, hold :kbd:`Ctrl` (or :kbd:`⌘`) and scroll with the mouse over it, or pinch on a trackpad.
 
 .. _Compiler errors:
 
@@ -304,3 +302,39 @@ of the document is rendered in the background right after, and any page not
 ready yet is compiled on demand when you scroll to it. Compiled pages are cached
 until the document — or a file it imports — changes, so scrolling back and forth
 through a long document costs nothing.
+
+DOCX export
+~~~~~~~~~~~
+
+.. warning::
+
+   The DOCX export is **experimental**.
+
+   It relies on Typst's HTML export, which is still under active development: the Word document keeps the content, but not the page layout, and the result may change between Typst and TINO releases.
+   Use the PDF for documents that need to look exactly right.
+
+Next to the **PDF** button, the **DOCX** button downloads the current ``.typ`` file as a Word document.
+It is only shown when `pandoc <https://pandoc.org/>`_ is installed on the server (it is included in the Docker image for ``amd64`` and ``arm64``).
+
+The document is built from Typst's HTML export, which pandoc converts to DOCX.
+That keeps the content and structure (headings, paragraphs, lists, tables, links and images), but **not the page layout**:
+
+- Page setup, spacing, headers and footers are ignored.
+- The content of ``grid`` elements is dropped.
+  In templates, render a borderless table instead when exporting to HTML:
+
+  .. code-block:: typst
+
+      #let layout-grid(..args) = context {
+        if target() == "html" { table(stroke: none, ..args) } else { grid(..args) }
+      }
+
+  Use ``layout-grid`` wherever the template uses ``grid`` (e.g. for a letterhead or signature rows); the PDF stays unchanged.
+
+To style the Word document (fonts, colours, margins, header and footer), add a ``reference.docx`` next to the ``.typ`` file or at the root of the bucket.
+TINO passes it to pandoc as `reference document <https://pandoc.org/MANUAL.html#option--reference-doc>`_.
+A good starting point is pandoc's default, which you can adjust in Word:
+
+.. code-block:: bash
+
+    pandoc -o reference.docx --print-default-data-file reference.docx
