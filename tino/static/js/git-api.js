@@ -28,6 +28,20 @@ export class GitAPI extends HttpClient {
     )
   }
 
+  /** List the local branches and the checked-out one. */
+
+  gitBranches(slug) {
+    return this._fetch(`${bucketPath(slug)}/git/branches`)
+  }
+
+  /** Switch to a branch, creating it from the current one if ``create``. */
+
+  gitCheckout(slug, branch, create = false) {
+    return this._json(
+      'POST', `${bucketPath(slug)}/git/checkout`, { branch, create },
+    )
+  }
+
   /** Push the current branch to the bucket's remote. */
 
   gitPush(slug) {

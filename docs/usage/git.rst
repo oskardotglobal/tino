@@ -10,8 +10,9 @@ The Git dialog
 ~~~~~~~~~~~~~~
 
 Click the **Git** button in the toolbar to open the Git dialog. It has two
-tabs — **Changes** and **History** — plus **Pull** and **Push** buttons in its
-header.
+tabs — **Changes** and **History** — plus a branch picker and **Pull** and
+**Push** buttons in its header. The toolbar button also shows the current
+branch.
 
 Committing
 ~~~~~~~~~~
@@ -45,6 +46,28 @@ Restoring files
 ~~~~~~~~~~~~~~~
 
 On the History tab, select a commit and a file, then click **Restore this file** to overwrite the working copy with the version from that commit.
+
+Branches
+~~~~~~~~
+
+The branch picker in the Git dialog's header shows the current branch and lists
+the project's local branches. Users with the **Committer** role can:
+
+- **Switch branches** by choosing another branch in the picker. Files that
+  differ between the branches are reloaded in open editors.
+- **Create a branch** with the **+** button next to the picker. The new branch
+  starts from the current one and is checked out right away.
+
+Uncommitted changes are carried over to the other branch. If they would be
+overwritten by the switch, it is refused — commit them first.
+
+To check out a branch that exists only on the remote, create a branch with the
+same name and pull it.
+
+.. important::
+
+   A project has a single working tree, shared by all its users. Switching the
+   branch therefore switches it for everyone working on the project.
 
 Remotes
 ~~~~~~~

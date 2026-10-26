@@ -229,8 +229,8 @@ class TinoApp {
   }
 
   /**
-   * Refresh the workspace after a pull replaced files on disk.
-   * @param {string[]} changed - Paths updated by the pull.
+   * Refresh the workspace after a pull or branch switch replaced files on disk.
+   * @param {string[]} changed - Paths updated on disk.
    */
 
   async reloadAfterPull(changed) {

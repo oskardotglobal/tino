@@ -37,9 +37,10 @@
         <span class="material-symbols-outlined">search</span>
         Search
       </button>
-      <button class="toolbar-btn" id="btn-git" title="Commit, history, push and pull">
+      <button class="toolbar-btn" id="btn-git" title="Commit, history, branches, push and pull">
         <span class="material-symbols-outlined">commit</span>
         Git
+        <span class="git-branch-label" id="git-branch-label"></span>
       </button>
       <button class="toolbar-btn hidden" id="btn-download" title="Download project as ZIP">
         <span class="material-symbols-outlined">download</span>
@@ -309,6 +310,13 @@
       <div class="dialog-header">
         <span>Git</span>
         <div class="git-remote-actions">
+          <label class="git-branch" title="Current branch">
+            <span class="material-symbols-outlined">alt_route</span>
+            <select class="git-branch-select" id="git-branch-select"></select>
+          </label>
+          <button class="icon-btn" id="btn-git-new-branch" title="New branch from the current one">
+            <span class="material-symbols-outlined">add</span>
+          </button>
           <button class="btn btn-secondary btn-small" id="btn-git-pull">
             <span class="material-symbols-outlined">download</span> Pull
           </button>

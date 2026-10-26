@@ -3,12 +3,14 @@ import {
   STATUS_ICONS,
   escapeHtml,
 } from './constants.js'
+import { GitBranches } from './git-branches.js'
 import { GitHistory } from './git-history.js'
 import { renderDiffEntries } from './diff-render.js'
 
 /**
  * Manages the Git dialog: the Changes tab (status, diffs, commit), the remote
- * actions (push and pull), and the tab switching. History browsing lives in
+ * actions (push and pull), and the tab switching. The branch picker lives in
+ * GitBranches. History browsing lives in
  * GitHistory, which renders into this dialog's second tab.
  */
 
@@ -19,19 +21,32 @@ export class GitManager {
   constructor(app) {
     this.app = app
     this.history = new GitHistory(app)
+    this.branches = new GitBranches(app, () => this._reloadTab())
     this._tab = 'changes'
   }
 
-  /** Fetch git status for all files. */
+  /** Fetch git status for all files, and the branches along with it. */
 
   async loadStatus() {
     if (!this.app.bucket)
       return
-    const statuses = await this.app.api.gitStatus(this.app.bucket)
+    const [statuses] = await Promise.all([
+      this.app.api.gitStatus(this.app.bucket),
+      this.branches.load(),
+    ])
     this.app.gitStatuses = {}
     statuses.forEach(item => {
       this.app.gitStatuses[item.path] = item.status
     })
+  }
+
+  /** Reload the visible tab after the working tree changed underneath it. */
+
+  async _reloadTab() {
+    if (this._tab === 'changes')
+      await this.loadChanges()
+    else
+      await this.history.load(this.history.filePath)
   }
 
   // ── Dialog and tabs ──
@@ -238,10 +253,7 @@ export class GitManager {
     if (!result)
       return
     await this.app.reloadAfterPull(result.changed)
-    if (this._tab === 'changes')
-      await this.loadChanges()
-    else
-      await this.history.load(this.history.filePath)
+    await this._reloadTab()
   }
 
   async _runRemoteAction(label, action) {

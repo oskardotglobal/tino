@@ -10,7 +10,8 @@ from ..auth import get_profile_service
 from ..collab import CollabManager
 from ..dependencies import get_collab_manager, get_git_service, get_notifier, require_committer, \
     require_editor, require_viewer
-from ..models import CommitInfo, CommitRequest, DiffEntry, FileStatus, RemoteResult, RestoreRequest
+from ..models import BranchList, CheckoutRequest, CheckoutResult, CommitInfo, CommitRequest, \
+    DiffEntry, FileStatus, RemoteResult, RestoreRequest
 from ..services.git import GitService
 from ..services.profile import ProfileService
 
@@ -114,6 +115,52 @@ async def git_pull(
         await get_notifier().notify(slug)
 
     return RemoteResult(changed=changed, output=output)
+
+
+@router.get('/branches', response_model=BranchList)
+async def git_branches(
+    slug: str,
+    user=Depends(require_viewer),
+    svc: GitService = Depends(get_git_service),
+):
+    '''List the local branches and the currently checked-out one.'''
+    try:
+        return svc.branches(slug)
+
+    except Exception as exc:
+        logger.warning('git branches failed for %s (user: %s): %s', slug, user.username, exc)
+        raise HTTPException(404, 'Bucket not found or not a git repo') from exc
+
+
+@router.post('/checkout', response_model=CheckoutResult)
+async def git_checkout(
+    slug: str, body: CheckoutRequest,
+    user=Depends(require_committer),
+    svc: GitService = Depends(get_git_service),
+    collab: CollabManager = Depends(get_collab_manager),
+):
+    '''Switch the bucket to another branch, optionally creating it first.
+
+    The working tree is shared by everyone, so this switches the branch for
+    all users of the bucket. Open collaboration rooms for files that differ
+    between the branches are reloaded, as after a pull.
+    '''
+    try:
+        changed = svc.checkout(slug, body.branch, create=body.create)
+
+    except Exception as exc:
+        logger.warning('git checkout of %r failed for %s (user: %s): %s',
+                       body.branch, slug, user.username, exc)
+        raise HTTPException(400, _git_error(exc)) from exc
+
+    logger.info('Switched %s to %s: %d file(s) changed (user: %s)',
+                slug, body.branch, len(changed), user.username)
+
+    if changed:
+        await collab.reload_rooms(slug, changed)
+    await get_notifier().notify(slug)
+
+    return CheckoutResult(branch=body.branch, changed=changed)
 
 
 def _git_error(exc: Exception) -> str:

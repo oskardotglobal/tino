@@ -1,4 +1,4 @@
-'''Git operations service. Wraps GitPython to expose status, commit, log, diff, and restore.'''
+'''Git operations service. Wraps GitPython for status, commit, branches, log, diff, and restore.'''
 
 import logging
 from contextlib import contextmanager
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import git as gitpython
 
-from ..models import CommitInfo, DiffEntry, FileStatus
+from ..models import BranchList, CommitInfo, DiffEntry, FileStatus
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,37 @@ class GitService:
             changed = self._changed_between(repo, before, repo.head.commit.hexsha)
             logger.info('Pulled %s from %s (%d files changed)', slug, _REMOTE_NAME, len(changed))
             return output, changed
+
+    def branches(self, slug: str) -> BranchList:
+        '''List the local branches and the currently checked-out one.'''
+        with self._open(slug) as repo:
+            current = None if repo.head.is_detached else repo.active_branch.name
+            return BranchList(current=current, branches=sorted(h.name for h in repo.heads))
+
+    def checkout(self, slug: str, branch: str, create: bool = False) -> list[str]:
+        '''Switch the working tree to ``branch``, creating it from HEAD if ``create``.
+
+        :returns: paths whose content differs between the old and new branch.
+
+        Uncommitted changes are carried over as ``git switch`` does; when they
+        would be overwritten, git refuses and the error is raised unchanged.
+        A local branch that does not exist yet but is known on ``origin`` is
+        created to track it.
+        '''
+        with self._open(slug) as repo:
+            # A leading dash would be parsed as an option by ``git switch``.
+            if not branch or branch.startswith('-'):
+                raise ValueError(f'Invalid branch name: {branch!r}')
+            repo.git.check_ref_format('--branch', branch)
+
+            before = repo.head.commit.hexsha
+            if create:
+                repo.git.switch('-c', branch)
+            else:
+                repo.git.switch(branch)
+            changed = self._changed_between(repo, before, repo.head.commit.hexsha)
+            logger.info('Switched %s to %s (%d files changed)', slug, branch, len(changed))
+            return changed
 
     @staticmethod
     def _require_remote(repo) -> None:

@@ -210,6 +210,26 @@ class RemoteResult(BaseModel):
     '''File paths updated by a pull (always empty for a push).'''
 
 
+class BranchList(BaseModel):
+    '''Local branches of a bucket's repository.'''
+    current: str | None
+    '''Checked-out branch, or ``None`` when HEAD is detached.'''
+    branches: list[str]
+
+
+class CheckoutRequest(BaseModel):
+    '''Request body for switching to (and optionally creating) a branch.'''
+    branch: str
+    create: bool = False
+
+
+class CheckoutResult(BaseModel):
+    '''Result of switching branches.'''
+    branch: str
+    changed: list[str] = []
+    '''File paths whose content differs between the old and new branch.'''
+
+
 # ── Templates ──
 
 

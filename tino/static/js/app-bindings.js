@@ -63,6 +63,27 @@ const bindGitDialogChrome = app => {
   })
 }
 
+/* The dialog header: branch picker and remote actions. */
+
+const bindGitHeaderControls = app => {
+  document.getElementById('git-branch-select')
+    .addEventListener('change', evt => {
+      app.git.branches.switchTo(evt.target.value)
+    })
+  document.getElementById('btn-git-new-branch')
+    .addEventListener('click', () => {
+      app.git.branches.create()
+    })
+  document.getElementById('btn-git-pull')
+    .addEventListener('click', () => {
+      app.git.pull()
+    })
+  document.getElementById('btn-git-push')
+    .addEventListener('click', () => {
+      app.git.push()
+    })
+}
+
 const bindGitButtons = app => {
   document.getElementById('btn-git')
     .addEventListener('click', () => {
@@ -85,14 +106,7 @@ const bindGitButtons = app => {
     .addEventListener('click', () => {
       app.git.selectAll(false)
     })
-  document.getElementById('btn-git-pull')
-    .addEventListener('click', () => {
-      app.git.pull()
-    })
-  document.getElementById('btn-git-push')
-    .addEventListener('click', () => {
-      app.git.push()
-    })
+  bindGitHeaderControls(app)
   app.els.commitFiles.addEventListener('click', evt => {
     const name = evt.target.closest('.commit-file-name')
     if (!name)

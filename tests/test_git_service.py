@@ -1,4 +1,4 @@
-'''Tests for GitService: status, commit, log, diff, tree, show and restore.'''
+'''Tests for GitService: status, commit, branches, log, diff, tree, show and restore.'''
 
 import pytest
 
@@ -83,6 +83,59 @@ def test_commit_ignores_traversal_paths(git_svc, files, bucket, data_dir):
     files.write(bucket, 'a.typ', 'x')
     git_svc.commit(bucket, ['a.typ', '../outside.txt'], 'm')
     assert git_svc.tree(bucket, 'HEAD') == ['a.typ']
+
+
+# ── branches / checkout ──
+
+def test_branches_lists_current(git_svc, files, bucket):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    info = git_svc.branches(bucket)
+    assert info.branches == [info.current]
+
+
+def test_checkout_create_and_switch_back(git_svc, files, bucket):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    main = git_svc.branches(bucket).current
+    assert git_svc.checkout(bucket, 'draft', create=True) == []
+    _commit(git_svc, files, bucket, 'a.typ', 'v2')
+    assert git_svc.branches(bucket).current == 'draft'
+    assert sorted(git_svc.branches(bucket).branches) == sorted([main, 'draft'])
+
+    assert git_svc.checkout(bucket, main) == ['a.typ']
+    assert files.read(bucket, 'a.typ')['content'] == 'v1'
+
+
+def test_checkout_carries_uncommitted_changes(git_svc, files, bucket):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    files.write(bucket, 'a.typ', 'wip')
+    git_svc.checkout(bucket, 'draft', create=True)
+    assert files.read(bucket, 'a.typ')['content'] == 'wip'
+
+
+def test_checkout_refuses_to_overwrite_changes(git_svc, files, bucket):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    main = git_svc.branches(bucket).current
+    git_svc.checkout(bucket, 'draft', create=True)
+    _commit(git_svc, files, bucket, 'a.typ', 'v2')
+    files.write(bucket, 'a.typ', 'wip')
+    with pytest.raises(Exception):
+        git_svc.checkout(bucket, main)
+    assert git_svc.branches(bucket).current == 'draft'
+    assert files.read(bucket, 'a.typ')['content'] == 'wip'
+
+
+@pytest.mark.parametrize('name', ['', '-f', 'bad..name', 'with space'])
+def test_checkout_rejects_invalid_names(git_svc, files, bucket, name):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    with pytest.raises(Exception):
+        git_svc.checkout(bucket, name, create=True)
+    assert git_svc.branches(bucket).branches == [git_svc.branches(bucket).current]
+
+
+def test_checkout_unknown_branch_raises(git_svc, files, bucket):
+    _commit(git_svc, files, bucket, 'a.typ', 'v1')
+    with pytest.raises(Exception):
+        git_svc.checkout(bucket, 'ghost')
 
 
 # ── log ──

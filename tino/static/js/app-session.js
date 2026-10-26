@@ -52,9 +52,11 @@ export const applyRoleVisibility = app => {
   }))
     document.getElementById(id).classList.toggle('hidden', !visible)
 
-  /* Committing and syncing with the remote both need the committer role, so
-     the Changes tab and the remote actions appear and disappear together. */
+  /* Committing, switching branches and syncing with the remote all need the
+     committer role, so their controls appear and disappear together. Others
+     still see the current branch, in a picker they cannot change. */
 
-  for (const id of ['btn-git-tab-changes', 'btn-git-pull', 'btn-git-push'])
+  for (const id of ['btn-git-tab-changes', 'btn-git-new-branch', 'btn-git-pull', 'btn-git-push'])
     document.getElementById(id).classList.toggle('hidden', !canCommit)
+  document.getElementById('git-branch-select').disabled = !canCommit
 }

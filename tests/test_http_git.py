@@ -110,6 +110,28 @@ def test_commit_without_files_is_400(login, repo):  # pylint: disable=unused-arg
     assert resp.status_code == 400
 
 
+# ── branches / checkout ──
+
+def test_branches(login, repo):  # pylint: disable=unused-argument
+    data = login(VIEWER).get(f'{BASE}/branches').json()
+    assert data['branches'] == [data['current']]
+
+
+def test_checkout_requires_committer(login, repo):  # pylint: disable=unused-argument
+    body = {'branch': 'draft', 'create': True}
+    assert login(EDITOR).post(f'{BASE}/checkout', json=body).status_code == 403
+
+    resp = login(COMMIT).post(f'{BASE}/checkout', json=body)
+    assert resp.json() == {'branch': 'draft', 'changed': []}
+    assert login(VIEWER).get(f'{BASE}/branches').json()['current'] == 'draft'
+
+
+def test_checkout_unknown_branch_is_400(login, repo):  # pylint: disable=unused-argument
+    resp = login(COMMIT).post(f'{BASE}/checkout', json={'branch': 'ghost'})
+    assert resp.status_code == 400
+    assert resp.json()['detail']
+
+
 # ── restore ──
 
 def test_restore(login, repo):
