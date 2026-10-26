@@ -6,8 +6,8 @@ from tino import auth, config
 
 from .conftest import ADMIN, COMMIT, EDITOR, NOBODY, VIEWER
 
-
 # ── list ──
+
 
 def test_list_shows_resolved_roles(login, acl_bucket, app_buckets):
     app_buckets.create('secret', access=[])

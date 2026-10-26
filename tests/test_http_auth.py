@@ -6,8 +6,8 @@ from tino import auth, config
 
 from .conftest import ADMIN, EDITOR
 
-
 # ── Middleware gate ──
+
 
 def test_api_requires_auth(client):
     resp = client.get('/api/buckets')
