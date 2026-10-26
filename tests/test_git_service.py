@@ -132,6 +132,57 @@ def test_checkout_rejects_invalid_names(git_svc, files, bucket, name):
     assert git_svc.branches(bucket).branches == [git_svc.branches(bucket).current]
 
 
+def test_branches_include_origin_branches(buckets, git_svc, upstream):
+    buckets.create('cloned', remote=str(upstream))
+    info = git_svc.branches('cloned')
+    assert (info.current, info.branches, info.remote) == ('main', ['main'], ['feature'])
+
+
+def test_checkout_origin_branch_creates_tracking_branch(buckets, git_svc, upstream, data_dir):
+    import git  # pylint: disable=import-outside-toplevel
+
+    buckets.create('cloned', remote=str(upstream))
+    git_svc.checkout('cloned', 'feature')
+    info = git_svc.branches('cloned')
+    assert (info.current, info.branches, info.remote) == ('feature', ['feature', 'main'], [])
+    repo = git.Repo(data_dir / 'cloned')
+    assert repo.active_branch.tracking_branch().name == 'origin/feature'
+
+
+def test_pull_fetches_new_origin_branches(buckets, git_svc, upstream):
+    import git  # pylint: disable=import-outside-toplevel
+
+    buckets.create('cloned', remote=str(upstream))
+    up = git.Repo(upstream)
+    up.create_head('later')
+    (upstream / 'doc.typ').write_text('newer\n')
+    up.index.add(['doc.typ'])
+    up.index.commit('Upstream update')
+
+    assert git_svc.branches('cloned').remote == ['feature']
+    _, changed = git_svc.pull('cloned')
+    assert changed == ['doc.typ']
+    assert git_svc.branches('cloned').remote == ['feature', 'later']
+
+
+def test_clone_of_empty_remote(buckets, git_svc, tmp_path_factory):
+    import git  # pylint: disable=import-outside-toplevel
+
+    empty = tmp_path_factory.mktemp('empty')
+    git.Repo.init(empty, bare=True, initial_branch='main')
+    buckets.create('cloned', remote=str(empty))
+    assert git_svc.log('cloned') == []
+    info = git_svc.branches('cloned')
+    assert (info.current, info.branches) == ('main', ['main'])
+
+
+def test_pull_of_unpushed_branch_raises(buckets, git_svc, upstream):
+    buckets.create('cloned', remote=str(upstream))
+    git_svc.checkout('cloned', 'draft', create=True)
+    with pytest.raises(ValueError, match='push it first'):
+        git_svc.pull('cloned')
+
+
 def test_checkout_unknown_branch_raises(git_svc, files, bucket):
     _commit(git_svc, files, bucket, 'a.typ', 'v1')
     with pytest.raises(Exception):

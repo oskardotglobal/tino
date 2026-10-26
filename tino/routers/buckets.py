@@ -3,6 +3,8 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
+from git import GitError
 
 from ..auth import can_manage_access, get_current_user, get_profile_service, resolve_role
 from ..dependencies import get_bucket_service, get_compiler_service, require_bucket_owner, \
@@ -71,7 +73,9 @@ async def create_bucket(
         raise HTTPException(403, 'API keys cannot create projects')
 
     try:
-        result = svc.create(
+        # A clone can take a while; keep it off the event loop.
+        result = await run_in_threadpool(
+            svc.create,
             body.slug, body.description, body.access,
             name=body.name, remote=body.remote, owner=user.username,
             author=profiles.identity(user.username, user.email),
@@ -84,6 +88,13 @@ async def create_bucket(
             body.slug, user.username,
         )
         raise HTTPException(409, 'Bucket already exists') from exc
+    except GitError as exc:
+        logger.warning(
+            'Bucket creation failed: cannot clone %s (user: %s): %s',
+            body.remote, user.username, exc,
+        )
+        message = (getattr(exc, 'stderr', '') or '').strip() or str(exc)
+        raise HTTPException(400, f'Could not clone {body.remote}: {message}') from exc
 
 
 @router.put('/{slug}', response_model=BucketInfo)

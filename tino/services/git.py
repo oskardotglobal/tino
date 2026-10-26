@@ -100,27 +100,46 @@ class GitService:
             return output
 
     def pull(self, slug: str) -> tuple[str, list[str]]:
-        '''Fast-forward the current branch from ``origin``.
+        '''Fetch ``origin`` and fast-forward the current branch from it.
 
         :returns: ``(git output, paths changed in the working tree)``.
 
-        Only fast-forwards are allowed: a merge or rebase could leave conflict
-        markers in the working tree, which the web UI has no way to resolve.
+        The whole remote is fetched (pruning deleted branches), so the branch
+        list picks up branches created on the remote since. Only fast-forwards
+        are allowed: a merge or rebase could leave conflict markers in the
+        working tree, which the web UI has no way to resolve.
         '''
         with self._open(slug) as repo:
             self._require_remote(repo)
             branch = repo.active_branch.name
             before = repo.head.commit.hexsha
-            output = repo.git.pull('--ff-only', _REMOTE_NAME, branch)
+            repo.git.fetch('--prune', _REMOTE_NAME)
+            if branch not in self._remote_branches(repo):
+                raise ValueError(f'Branch {branch} does not exist on the remote yet, push it first')
+            output = repo.git.merge('--ff-only', f'{_REMOTE_NAME}/{branch}')
             changed = self._changed_between(repo, before, repo.head.commit.hexsha)
             logger.info('Pulled %s from %s (%d files changed)', slug, _REMOTE_NAME, len(changed))
             return output, changed
 
     def branches(self, slug: str) -> BranchList:
-        '''List the local branches and the currently checked-out one.'''
+        '''List the local branches, the ``origin`` ones not yet local, and the current one.'''
         with self._open(slug) as repo:
             current = None if repo.head.is_detached else repo.active_branch.name
-            return BranchList(current=current, branches=sorted(h.name for h in repo.heads))
+            # A branch without commits yet (a clone of an empty remote) has no
+            # head to list, but it is still the one checked out.
+            local   = sorted({h.name for h in repo.heads} | ({current} if current else set()))
+            return BranchList(
+                current=current, branches=local,
+                remote=[b for b in self._remote_branches(repo) if b not in local],
+            )
+
+    @staticmethod
+    def _remote_branches(repo) -> list[str]:
+        '''Branch names known on ``origin``, without its symbolic ``HEAD``.'''
+        remote = next((r for r in repo.remotes if r.name == _REMOTE_NAME), None)
+        if remote is None:
+            return []
+        return sorted(ref.remote_head for ref in remote.refs if ref.remote_head != 'HEAD')
 
     def checkout(self, slug: str, branch: str, create: bool = False) -> list[str]:
         '''Switch the working tree to ``branch``, creating it from HEAD if ``create``.
@@ -168,6 +187,9 @@ class GitService:
     def log(self, slug: str, path: str | None = None, max_count: int = 50) -> list[CommitInfo]:
         '''Return commit history, optionally filtered to a single file.'''
         with self._open(slug) as repo:
+            if not repo.head.is_valid():
+                return []
+
             kwargs: dict = {'max_count': max_count}
 
             if path:

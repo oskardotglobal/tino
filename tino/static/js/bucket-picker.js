@@ -1,10 +1,10 @@
+import { REMOTE_URL, escapeHtml } from './constants.js'
 import {
   addAccessRow,
   collectAccessEntries,
   renderAccessList,
   subjectPlaceholder,
 } from './bucket-access.js'
-import { escapeHtml } from './constants.js'
 
 /**
  * Manages the project picker dialog and the project CRUD form. Projects are
@@ -182,18 +182,59 @@ export class BucketPicker {
     return true
   }
 
+  _validateRemote(remote) {
+    if (remote && !REMOTE_URL.test(remote)) {
+      this.app.toast.error(
+        'Remote URL must start with https://, ssh:// or git@'
+        + ' (e.g. "git@github.com:acme/docs.git").',
+      )
+      return false
+    }
+    return true
+  }
+
   async _saveBucket() {
     const slug = this.app.els.bucketFormSlug.value.trim()
-    if (!this._validateSlug(slug))
-      return
     const data = this._collectForm()
-    if (this._editingSlug)
-      await this.app.api.updateBucket(this._editingSlug, data)
-    else
-      await this.app.api.createBucket(slug, data)
+    if (!this._validateSlug(slug) || !this._validateRemote(data.remote))
+      return
+    if (!await this._withBusySave(this._saveRequest(slug, data)))
+      return
     await this.app.fileTree.loadBuckets()
     this._showListView()
     await this._renderList()
+  }
+
+  /** @returns {{label: string, action: Function}} The request saving the form. */
+
+  _saveRequest(slug, data) {
+    const editing = this._editingSlug
+    if (editing)
+      return { action: () => this.app.api.updateBucket(editing, data), label: 'Saving…' }
+    return {
+      action: () => this.app.api.createBucket(slug, data),
+      label: data.remote ? 'Cloning…' : 'Saving…',
+    }
+  }
+
+  /* Creating a project with a remote clones it, which can take a while, so
+     the save button says what is going on and cannot be pressed twice. */
+
+  async _withBusySave({ label, action }) {
+    const btn = document.getElementById('btn-bucket-save')
+    const idle = btn.textContent
+    Object.assign(btn, { disabled: true, textContent: label })
+    try {
+      await action()
+      return true
+    }
+    catch (err) {
+      this.app.toast.error(`Saving the project failed: ${err.message}`)
+      return false
+    }
+    finally {
+      Object.assign(btn, { disabled: false, textContent: idle })
+    }
   }
 
   _collectForm() {

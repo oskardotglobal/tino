@@ -33,7 +33,7 @@ export class GitBranches {
     }
   }
 
-  _render({ current, branches }) {
+  _render({ current, branches, remote = [] }) {
     this.current = current
     document.getElementById('git-branch-label').textContent = current || ''
     const select = document.getElementById('git-branch-select')
@@ -41,9 +41,21 @@ export class GitBranches {
     if (!current)
       select.add(new Option('(detached)', '', true, true))
     branches.forEach(name => select.add(new Option(name, name, false, name === current)))
+    if (remote.length > 0)
+      select.append(GitBranches._remoteGroup(remote))
   }
 
-  /** Check out an existing branch. */
+  static _remoteGroup(names) {
+    const group = document.createElement('optgroup')
+    group.label = 'origin'
+    names.forEach(name => group.append(new Option(name, name)))
+    return group
+  }
+
+  /**
+   * Check out a branch. An ``origin`` branch from the picker has no local
+   * branch yet; the server creates one that tracks it.
+   */
 
   async switchTo(name) {
     if (!name || name === this.current)

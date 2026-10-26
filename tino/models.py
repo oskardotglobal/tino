@@ -45,6 +45,18 @@ class AccessEntry(BaseModel):
 
 Slug = Annotated[str, Field(pattern=r'^[a-z0-9]+(?:-[a-z0-9]+)*$', min_length=1, max_length=50)]
 
+# A git remote: empty (none), an HTTPS URL, an ssh:// URL, or an SCP-style SSH
+# address such as ``git@github.com:acme/docs.git``. Anything else — notably a
+# local path or a file:// URL — is refused, as it would let a user clone or pull
+# any repository on the server, including projects they have no access to.
+# SSH hosts must start with a letter or digit, so none can pass as an ssh option.
+RemoteUrl = Annotated[str, Field(
+    pattern=r'^(?:https://\S+'
+            r'|ssh://(?:[^\s@/]+@)?[A-Za-z0-9][A-Za-z0-9.-]*(?::\d+)?/\S+'
+            r'|git@[A-Za-z0-9][A-Za-z0-9.-]*:\S+)?$',
+    max_length=500,
+)]
+
 
 class BucketCreate(BaseModel):
     '''Request body for creating a new bucket.
@@ -54,7 +66,7 @@ class BucketCreate(BaseModel):
     slug: Slug
     name: str = Field('', max_length=50)
     description: str = ''
-    remote: str = ''
+    remote: RemoteUrl = ''
     access: list[AccessEntry] = []
 
 
@@ -62,7 +74,7 @@ class BucketUpdate(BaseModel):
     '''Request body for updating bucket metadata. Omitted fields are unchanged.'''
     name: str | None = Field(None, max_length=50)
     description: str | None = None
-    remote: str | None = None
+    remote: RemoteUrl | None = None
     access: list[AccessEntry] | None = None
     owner: str | None = Field(None, max_length=100)
     '''Transfers ownership. Only an administrator or the current owner may set it.'''
@@ -211,10 +223,16 @@ class RemoteResult(BaseModel):
 
 
 class BranchList(BaseModel):
-    '''Local branches of a bucket's repository.'''
+    '''Branches of a bucket's repository.'''
     current: str | None
     '''Checked-out branch, or ``None`` when HEAD is detached.'''
     branches: list[str]
+    '''Local branches.'''
+    remote: list[str] = []
+    '''Branches on ``origin`` without a local branch of the same name.
+
+    As of the last clone, pull or push: listing them does not contact the remote.
+    '''
 
 
 class CheckoutRequest(BaseModel):

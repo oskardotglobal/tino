@@ -14,6 +14,7 @@ import json
 import logging
 from base64 import b64encode
 
+import git
 import httpx
 import pytest
 from fastapi.testclient import TestClient
@@ -96,6 +97,22 @@ def files(data_dir):
 @pytest.fixture
 def git_svc(data_dir):
     return GitService(data_dir)
+
+
+@pytest.fixture
+def upstream(tmp_path_factory):
+    '''A repository to clone buckets from: ``main`` with ``doc.typ``, plus ``feature``.
+
+    It lives outside the data directory so it is not listed as a bucket.
+    '''
+    path = tmp_path_factory.mktemp('upstream')
+    repo = git.Repo.init(path, initial_branch='main')
+    (path / 'doc.typ').write_text('upstream\n')
+    repo.index.add(['doc.typ'])
+    repo.index.commit('Upstream commit')
+    repo.create_head('feature')
+    repo.close()
+    return path
 
 
 @pytest.fixture

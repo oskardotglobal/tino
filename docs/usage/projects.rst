@@ -24,7 +24,10 @@ Any authenticated user can create new projects from the project picker dialog.
 Click **New Project**, fill in a slug (the unique identifier) and an optional description, then save.
 
 The same form holds the optional **Remote URL** used by
-:ref:`push and pull <usage/git:Remotes>`.
+:ref:`push and pull <usage/git:Remotes>`. When you create a project with a
+remote URL, TINO clones that repository instead of starting an empty one, and
+checks out its default branch. If the clone fails — a typo in the URL, or the
+server lacks access — the project is not created and the error is shown.
 
 Ownership
 ~~~~~~~~~

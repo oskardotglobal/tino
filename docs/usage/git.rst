@@ -51,18 +51,20 @@ Branches
 ~~~~~~~~
 
 The branch picker in the Git dialog's header shows the current branch and lists
-the project's local branches. Users with the **Committer** role can:
+the project's local branches, followed by the branches on ``origin`` that have
+no local counterpart yet. Users with the **Committer** role can:
 
-- **Switch branches** by choosing another branch in the picker. Files that
-  differ between the branches are reloaded in open editors.
+- **Switch branches** by choosing another branch in the picker. Choosing an
+  ``origin`` branch creates a local branch that tracks it. Files that differ
+  between the branches are reloaded in open editors.
 - **Create a branch** with the **+** button next to the picker. The new branch
   starts from the current one and is checked out right away.
 
 Uncommitted changes are carried over to the other branch. If they would be
 overwritten by the switch, it is refused — commit them first.
 
-To check out a branch that exists only on the remote, create a branch with the
-same name and pull it.
+The ``origin`` branches are those known since the last clone, pull or push.
+Pull to pick up branches created on the remote since.
 
 .. important::
 
@@ -74,12 +76,19 @@ Remotes
 
 A project can carry a single remote URL, set in its edit form (see
 :ref:`Projects`). TINO keeps the repository's ``origin`` remote in sync with it.
+The URL must be an HTTPS URL (``https://github.com/acme/docs.git``), an SSH URL
+(``ssh://git@github.com/acme/docs.git``), or an SSH address of the form
+``git@github.com:acme/docs.git``. Local paths and other schemes are refused, so a project can never be cloned from or pulled out
+of another repository on the server.
+A project created with a remote URL starts as a clone of that repository. Its
+settings (name, description, owner and access list) then stay out of git, so
+the clone matches the remote exactly and a push never publishes them.
 
 With a remote configured, the Git dialog's **Push** and **Pull** buttons become
 available to users with the **Committer** role:
 
 - **Push** pushes the current branch to ``origin``.
-- **Pull** fast-forwards the current branch from ``origin``. Only
+- **Pull** fetches ``origin`` and fast-forwards the current branch from it. Only
   fast-forwards are performed — if the histories have diverged, the pull is
   rejected rather than leaving conflict markers in the working tree. Files
   changed by a pull are reloaded in open editors.

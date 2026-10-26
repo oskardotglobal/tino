@@ -16,6 +16,9 @@ META_FILE = '.meta.yml'
 
 REMOTE_NAME = 'origin'
 
+# Fail instead of waiting for credentials on a terminal nobody is watching.
+_NO_PROMPT_ENV = {'GIT_TERMINAL_PROMPT': '0'}
+
 
 class BucketService:
     '''CRUD operations for buckets (git-backed project directories).'''
@@ -131,13 +134,22 @@ class BucketService:
         owner: str = '',
         author: tuple[str, str] | None = None,
     ) -> BucketInfo:
-        '''Create a new bucket: mkdir, git init, write .meta.yml, initial commit.'''
+        '''Create a new bucket: init (or clone *remote*), write .meta.yml, commit it.
+
+        With a *remote* the bucket starts as a clone of it, on the remote's
+        default branch. Its .meta.yml then stays out of git (see
+        :meth:`_exclude_meta`), so the clone matches the remote exactly.
+        A failed clone leaves nothing behind and raises ``git.GitError``.
+        '''
         path = self._path(slug)
 
         if path.is_dir() and any(path.iterdir()):
             raise FileExistsError(slug)
 
-        path.mkdir(parents=True, exist_ok=True)
+        if remote:
+            self._clone(remote, path)
+        else:
+            path.mkdir(parents=True, exist_ok=True)
 
         meta = {'description': description}
         if name:
@@ -150,18 +162,51 @@ class BucketService:
             meta['access'] = self._dump_access(access)
         self._write_meta(path, meta)
 
-        repo = git.Repo.init(path)
+        repo = git.Repo(path) if remote else git.Repo.init(path)
         try:
-            repo.index.add([META_FILE])
-            actor = self._actor(author)
-            repo.index.commit('Initialize bucket\n\nTino-Meta: true',
-                              author=actor, committer=actor)
+            self._commit_meta(repo, 'Initialize bucket', author)
             self._sync_remote(repo, remote)
         finally:
             repo.close()
 
-        logger.info('Created bucket %s', slug)
+        logger.info('Created bucket %s%s', slug, f' from {remote}' if remote else '')
         return self._to_info(slug, path)
+
+    @classmethod
+    def _clone(cls, remote: str, path: Path) -> None:
+        '''Clone *remote* into *path*, removing whatever a failed clone left.'''
+        try:
+            repo = git.Repo.clone_from(remote, path, env=_NO_PROMPT_ENV)
+        except git.GitError:
+            shutil.rmtree(path, ignore_errors=True)
+            raise
+        try:
+            cls._exclude_meta(repo)
+        finally:
+            repo.close()
+
+    @staticmethod
+    def _exclude_meta(repo: git.Repo) -> None:
+        '''Keep .meta.yml out of a cloned repository's commits.
+
+        Committing it would make the clone diverge from its remote, so pulls
+        could no longer fast-forward, and a push would publish the project's
+        owner and access list to the remote. An upstream that tracks its own
+        .meta.yml is unaffected: excludes never apply to tracked files.
+        '''
+        exclude = Path(repo.git_dir) / 'info' / 'exclude'
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        with exclude.open('a', encoding='utf-8') as fh:
+            fh.write(f'/{META_FILE}\n')
+
+    def _commit_meta(self, repo: git.Repo, summary: str,
+                     author: tuple[str, str] | None) -> None:
+        '''Commit .meta.yml, unless the repository excludes it (a clone).'''
+        if repo.ignored(META_FILE):
+            return
+        repo.index.add([META_FILE])
+        actor = self._actor(author)
+        repo.index.commit(f'{summary}\n\nTino-Meta: true', author=actor, committer=actor)
 
     def update(  # pylint: disable=too-many-arguments
         self, slug: str, description: str | None = None,
@@ -193,12 +238,7 @@ class BucketService:
 
             repo = git.Repo(path)
             try:
-                repo.index.add([META_FILE])
-                actor = self._actor(author)
-                repo.index.commit(
-                    'Update bucket metadata\n\nTino-Meta: true',
-                    author=actor, committer=actor,
-                )
+                self._commit_meta(repo, 'Update bucket metadata', author)
                 if remote is not None:
                     self._sync_remote(repo, remote)
             finally:

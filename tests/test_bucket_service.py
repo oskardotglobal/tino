@@ -1,5 +1,6 @@
 '''Tests for BucketService: CRUD and .meta.yml round-trips.'''
 
+import git
 import pytest
 
 from tino.models import AccessEntry
@@ -74,3 +75,35 @@ def test_delete(buckets):
 
 def test_delete_missing_returns_false(buckets):
     assert buckets.delete('ghost') is False
+
+
+# ── create from a remote ──
+
+def test_create_with_remote_clones_it(buckets, files, upstream, data_dir):
+    info = buckets.create('proj', remote=str(upstream))
+    assert info.remote == str(upstream)
+    assert files.read('proj', 'doc.typ')['content'] == 'upstream\n'
+
+    repo = git.Repo(data_dir / 'proj')
+    assert repo.active_branch.name == 'main'
+    assert repo.remotes.origin.url == str(upstream)
+    # .meta.yml stays local, so the clone matches the remote exactly.
+    assert [c.summary for c in repo.iter_commits()] == ['Upstream commit']
+    assert repo.ignored('.meta.yml')
+    assert not repo.is_dirty(untracked_files=True)
+
+
+def test_update_of_cloned_bucket_commits_nothing(buckets, upstream, data_dir):
+    buckets.create('proj', remote=str(upstream))
+    buckets.update('proj', description='changed')
+    assert buckets.get('proj').description == 'changed'
+    repo = git.Repo(data_dir / 'proj')
+    assert [c.summary for c in repo.iter_commits()] == ['Upstream commit']
+
+
+def test_create_with_unreachable_remote_leaves_nothing(buckets, data_dir, tmp_path_factory):
+    missing = tmp_path_factory.mktemp('gone') / 'nothing-here'
+    with pytest.raises(git.GitError):
+        buckets.create('proj', remote=str(missing))
+    assert not (data_dir / 'proj').exists()
+    assert buckets.get('proj') is None

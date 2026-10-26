@@ -133,3 +133,12 @@ export const STATUS_CLASSES = {
   modified: 'status-modified',
   untracked: 'status-untracked',
 }
+
+/** Allowed git remotes; mirrors RemoteUrl in models.py. */
+
+export const REMOTE_URL = new RegExp(
+  '^(?:https://\\S+'
+  + '|ssh://(?:[^\\s@/]+@)?[A-Za-z0-9][A-Za-z0-9.-]*(?::\\d+)?/\\S+'
+  + '|git@[A-Za-z0-9][A-Za-z0-9.-]*:\\S+)$',
+  'u',
+)

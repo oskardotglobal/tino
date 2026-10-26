@@ -71,6 +71,66 @@ def test_create_commit_is_authored_by_user(admin_client, app_env):
     repo.close()
 
 
+def _redirect_remote(monkeypatch, url, target):
+    '''Make git fetch *url* from the local repository *target* instead.'''
+    monkeypatch.setenv('GIT_CONFIG_COUNT', '1')
+    monkeypatch.setenv('GIT_CONFIG_KEY_0', f'url.{target}.insteadOf')
+    monkeypatch.setenv('GIT_CONFIG_VALUE_0', url)
+
+
+def test_create_with_remote_clones_it(admin_client, app_env, upstream, monkeypatch):
+    remote = 'https://git.example.test/acme/docs.git'
+    _redirect_remote(monkeypatch, remote, upstream)
+    resp = admin_client.post('/api/buckets', json={'slug': 'cloned', 'remote': remote})
+    assert resp.status_code == 201
+    assert resp.json()['remote'] == remote
+    assert (app_env / 'cloned' / 'doc.typ').read_text() == 'upstream\n'
+
+
+def test_create_with_bad_remote_is_400(admin_client, app_env, tmp_path_factory, monkeypatch):
+    remote = 'https://git.example.test/acme/missing.git'
+    _redirect_remote(monkeypatch, remote, tmp_path_factory.mktemp('gone') / 'nothing-here')
+    resp = admin_client.post('/api/buckets', json={'slug': 'cloned', 'remote': remote})
+    assert resp.status_code == 400
+    assert resp.json()['detail'].startswith(f'Could not clone {remote}:')
+    assert not (app_env / 'cloned').exists()
+
+
+@pytest.mark.parametrize('remote', [
+    'https://github.com/acme/docs.git',
+    'git@github.com:acme/docs.git',
+    'git@gitlab.example.com:group/sub/docs',
+    'ssh://git@github.com/acme/docs.git',
+    'ssh://gitlab.example.com:2222/group/docs.git',
+])
+def test_update_accepts_https_and_ssh_remotes(admin_client, acl_bucket, remote):
+    resp = admin_client.put(f'/api/buckets/{acl_bucket}', json={'remote': remote})
+    assert resp.status_code == 200
+    assert resp.json()['remote'] == remote
+
+
+@pytest.mark.parametrize('remote', [
+    '/srv/tino/buckets/secret',
+    '../secret',
+    'file:///srv/tino/buckets/secret',
+    'http://github.com/acme/docs.git',
+    'ext::sh -c id',
+    'git@-oProxyCommand=id:x',
+    'ssh://-oProxyCommand=id/x',
+    'ssh://git@-oProxyCommand=id/x',
+    'ssh://github.com',
+    'https://github.com/acme/docs.git\n/srv/secret',
+])
+@pytest.mark.parametrize('method', ['post', 'put'])
+def test_remote_must_be_https_or_ssh(admin_client, acl_bucket, app_env, remote, method):
+    if method == 'post':
+        resp = admin_client.post('/api/buckets', json={'slug': 'cloned', 'remote': remote})
+    else:
+        resp = admin_client.put(f'/api/buckets/{acl_bucket}', json={'remote': remote})
+    assert resp.status_code == 422
+    assert not (app_env / 'cloned').exists()
+
+
 def test_create_duplicate_is_409(admin_client, acl_bucket):
     assert admin_client.post('/api/buckets', json={'slug': acl_bucket}).status_code == 409
 
