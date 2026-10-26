@@ -130,6 +130,7 @@ def app_env(tmp_path, monkeypatch):
     monkeypatch.setattr(config, 'TINO_BUCKET_DIR', bucket_dir)
     monkeypatch.setattr(config, 'TINO_PACKAGE_DIR', tmp_path / 'packages')
     monkeypatch.setattr(config, 'TINO_FONT_DIR', font_dir)
+    monkeypatch.setattr(config, 'TINO_CACHE_DIR', tmp_path / 'cache')
     monkeypatch.setattr(config, 'TINO_SECRET_KEY', SECRET_KEY)
     monkeypatch.setattr(config, 'TINO_BASE_URL', 'http://localhost:8000')
     monkeypatch.setattr(auth, '_api_key_service', ApiKeyService(tmp_path / 'api_keys.yml'))
