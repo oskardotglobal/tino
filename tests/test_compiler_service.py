@@ -38,7 +38,7 @@ def _fake_run(pages=1, returncode=0, stderr=''):
                 deps = {'inputs': [cmd[cmd.index('--root') + 2]]}
                 Path(cmd[cmd.index('--deps') + 1]).write_text(json.dumps(deps))
             if '{0p}' in output:
-                for n in range(1, pages + 1):
+                for n in _selected(cmd, pages):
                     name = output.replace('{0p}', str(n)).replace('{t}', str(pages))
                     Path(name).write_text(f'<svg>{n}</svg>')
             else:
@@ -46,6 +46,21 @@ def _fake_run(pages=1, returncode=0, stderr=''):
         return SimpleNamespace(returncode=returncode, stderr=stderr, stdout='')
 
     return fake_run, calls
+
+
+def _selected(cmd, pages):
+    '''The page numbers a typst command exports, honouring ``--pages``.'''
+    if '--pages' not in cmd:
+        return range(1, pages + 1)
+    return [int(n) for n in cmd[cmd.index('--pages') + 1].split(',')]
+
+
+@pytest.fixture
+def paged_compiler(data_dir, tmp_path):
+    '''A compiler that pages documents longer than two pages.'''
+    compiler = CompilerService(data_dir, cache_dir=tmp_path / 'cache', page_threshold=2)
+    compiler._prefetch = lambda *args: None  # pylint: disable=protected-access
+    return compiler
 
 
 # ── command building ──
@@ -118,6 +133,79 @@ def test_compile_document_is_served_from_cache(compiler, files, bucket, monkeypa
     second = compiler.compile_document(bucket, 'a.typ')
     assert len(calls) == 1
     assert second['pages'] == first['pages']
+
+
+def test_paged_document_ships_first_page_only(paged_compiler, files, bucket, monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    monkeypatch.setattr(subprocess, 'run', _fake_run(pages=5)[0])
+
+    result = paged_compiler.compile_document(bucket, 'a.typ')
+    assert result['paged'] is True
+    assert result['pages'] == {'1': '<svg>1</svg>'}
+
+
+def test_full_compile_ships_every_page(paged_compiler, files, bucket, monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    monkeypatch.setattr(subprocess, 'run', _fake_run(pages=5)[0])
+
+    paged_compiler.compile_document(bucket, 'a.typ')
+    files.write(bucket, 'a.typ', 'changed')
+    result = paged_compiler.compile_document(bucket, 'a.typ', full=True)
+    assert result['paged'] is True
+    assert sorted(result['pages']) == ['1', '2', '3', '4', '5']
+
+
+def test_full_compile_is_served_from_cache(paged_compiler, files, bucket, monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    fake_run, calls = _fake_run(pages=5)
+    monkeypatch.setattr(subprocess, 'run', fake_run)
+
+    first = paged_compiler.compile_document(bucket, 'a.typ', full=True)
+    second = paged_compiler.compile_document(bucket, 'a.typ', full=True)
+    assert len(calls) == 1
+    assert second['pages'] == first['pages']
+
+
+def test_compile_pages_renders_missing_pages_in_one_call(paged_compiler, files, bucket,
+                                                         monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    fake_run, calls = _fake_run(pages=5)
+    monkeypatch.setattr(subprocess, 'run', fake_run)
+    paged_compiler.compile_document(bucket, 'a.typ')  # learns the page count
+    files.write(bucket, 'a.typ', 'changed')
+    paged_compiler.compile_document(bucket, 'a.typ')  # renders the first page only
+    calls.clear()
+
+    result = paged_compiler.compile_pages(bucket, 'a.typ', [4, 2, 3])
+    assert result['ok'] is True
+    assert result['pages'] == {'2': '<svg>2</svg>', '3': '<svg>3</svg>', '4': '<svg>4</svg>'}
+    [(cmd, _)] = calls
+    assert cmd[cmd.index('--pages') + 1] == '2,3,4'
+
+    again = paged_compiler.compile_pages(bucket, 'a.typ', [2, 3, 4])
+    assert len(calls) == 1
+    assert again['pages'] == result['pages']
+
+
+def test_compile_pages_reports_stale_revision(paged_compiler, files, bucket, monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    monkeypatch.setattr(subprocess, 'run', _fake_run(pages=5)[0])
+    paged_compiler.compile_document(bucket, 'a.typ')
+    files.write(bucket, 'a.typ', 'changed!')
+
+    result = paged_compiler.compile_pages(bucket, 'a.typ', [2])
+    assert result['ok'] is False
+    assert result['stale'] is True
+    assert result['pages'] == {}
+
+
+def test_compile_pages_rejects_out_of_range(paged_compiler, files, bucket, monkeypatch):
+    files.write(bucket, 'a.typ', 'x')
+    monkeypatch.setattr(subprocess, 'run', _fake_run(pages=5)[0])
+    paged_compiler.compile_document(bucket, 'a.typ')
+
+    with pytest.raises(FileNotFoundError):
+        paged_compiler.compile_pages(bucket, 'a.typ', [2, 6])
 
 
 def test_compile_pdf_returns_temp_file(compiler, files, bucket, monkeypatch):

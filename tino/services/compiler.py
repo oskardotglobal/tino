@@ -8,7 +8,8 @@ as the fingerprint is unchanged, pages are served straight from the cache.
 Documents longer than ``page_threshold`` pages switch to *paged* mode: instead
 of re-exporting every page on each change, only the first page is compiled up
 front (which also yields the current page count) and the remaining pages are
-compiled lazily, one at a time, as the client asks for them.
+compiled lazily, in batches, as the client asks for them. A *full* compile
+skips paging and returns every page at once, e.g. when a document is opened.
 
 Every paged compilation also schedules a background job that renders the whole
 document into the cache, so scrolling usually meets pages that are already
@@ -110,8 +111,11 @@ class CompilerService:
 
     # ── Public API ──
 
-    def compile_document(self, slug: str, path: str) -> dict:
+    def compile_document(self, slug: str, path: str, full: bool = False) -> dict:
         '''Compile a document and return its pages, page count and fingerprint.
+
+        With ``full``, every page is compiled and returned, even for a paged
+        document.
 
         The result is a dictionary with:
 
@@ -128,7 +132,8 @@ class CompilerService:
             Whether the remaining pages must be fetched one by one.
         ``pages``
             Mapping of 1-based page number (as a string) to SVG markup. Complete
-            for short documents, only the first page for paged ones.
+            for short documents and full compiles, only the first page for paged
+            ones.
         ``diagnostics``
             Errors and warnings reported by the compiler.
         '''
@@ -139,21 +144,22 @@ class CompilerService:
             fingerprint, signatures = self._fingerprint(doc, meta)
 
             if meta and meta['fingerprint'] == fingerprint:
-                cached = self._cached_result(doc, meta)
+                cached = self._cached_result(doc, meta, full)
 
                 if cached:
-                    if cached['paged']:
+                    if cached['paged'] and not full:
                         self._prefetch(doc, cached['fingerprint'], cached['count'])
 
                     return cached
 
-            return self._compile_fresh(doc, meta, signatures)
+            return self._compile_fresh(doc, meta, signatures, full)
 
-    def compile_page(self, slug: str, path: str, page: int) -> dict:
-        '''Compile (or serve from cache) a single page of a document.
+    def compile_pages(self, slug: str, path: str, pages: list[int]) -> dict:
+        '''Compile (or serve from cache) a batch of pages of a document.
 
-        Returns ``{'stale': True, ...}`` when the document changed since the
-        last full compile — the client then has to re-run
+        Cached pages are read from disk, and all missing ones are compiled with
+        a single Typst invocation. Returns ``{'stale': True, ...}`` when the
+        document changed since the last compile — the client then has to re-run
         :meth:`compile_document` to pick up the new fingerprint and page count.
         '''
         doc = self._resolve_source(slug, path)
@@ -163,12 +169,14 @@ class CompilerService:
             fingerprint, _ = self._fingerprint(doc, meta)
 
             if not meta or meta['fingerprint'] != fingerprint:
-                return {'fingerprint': fingerprint, 'ok': False, 'stale': True}
+                return {'fingerprint': fingerprint, 'ok': False, 'pages': {}, 'stale': True}
 
-            if page < 1 or page > meta['count']:
-                raise FileNotFoundError(f'page {page} is out of range')
+            numbers = sorted(set(pages))
 
-            return self._page_result(doc, meta, page)
+            if not numbers or numbers[0] < 1 or numbers[-1] > meta['count']:
+                raise FileNotFoundError(f'pages {pages} are out of range')
+
+            return self._pages_result(doc, meta, numbers)
 
     def compile_pdf(self, slug: str, path: str) -> Path:
         '''Compile a Typst file and return the path to the resulting PDF.
@@ -237,16 +245,17 @@ class CompilerService:
 
     # ── Compilation ──
 
-    def _compile_fresh(self, doc, meta, signatures):
+    def _compile_fresh(self, doc, meta, signatures, full):
         '''Compile a document whose cache is missing or outdated.
 
-        Known-long documents only export their first page, which is enough to
-        learn the (possibly changed) page count from Typst's ``{t}`` template.
+        Known-long documents only export their first page (unless ``full``),
+        which is enough to learn the (possibly changed) page count from Typst's
+        ``{t}`` template.
         '''
-        paged = bool(meta) and meta['count'] > self.page_threshold
+        first_only = not full and bool(meta) and meta['count'] > self.page_threshold
 
         try:
-            count, pages, deps, warnings = self._render(doc, '1' if paged else None)
+            count, pages, deps, warnings = self._render(doc, '1' if first_only else None)
 
         except CompileError as exc:
             logger.debug('Compilation failed for %s/%s', doc.slug, doc.path)
@@ -265,7 +274,7 @@ class CompilerService:
         }, pages)
         paged = count > self.page_threshold
 
-        if paged:
+        if paged and not full:
             self._prefetch(doc, fingerprint, count)
 
         return {
@@ -276,27 +285,44 @@ class CompilerService:
             'paged': paged,
             # A long document keeps its remaining pages on disk: the client
             # fetches them lazily instead of downloading the whole document.
-            'pages': _serialise_pages(pages, first_only=paged),
+            'pages': _serialise_pages(pages, first_only=paged and not full),
         }
 
-    def _page_result(self, doc, meta, page):
-        '''Serve a single page from the cache, compiling it first if needed.'''
+    def _pages_result(self, doc, meta, numbers):
+        '''Serve pages from the cache, compiling the missing ones in one go.'''
         fingerprint = meta['fingerprint']
-        cached = self._page_file(doc, fingerprint, page)
+        pages = {}
+        missing = []
 
-        if cached and cached.is_file():
-            return _page_response(fingerprint, page, cached.read_text(encoding='utf-8'))
+        for number in numbers:
+            cached = self._page_file(doc, fingerprint, number)
 
-        try:
-            _, pages, _, warnings = self._render(doc, str(page))
+            if cached and cached.is_file():
+                pages[number] = cached.read_text(encoding='utf-8')
+            else:
+                missing.append(number)
 
-        except CompileError as exc:
-            return self._failure(meta, exc.diagnostics)
+        warnings = []
 
-        svg = pages.get(page) or next(iter(pages.values()), '')
-        self._write_page(doc, fingerprint, page, svg)
+        if missing:
+            try:
+                _, rendered, _, warnings = self._render(doc, ','.join(map(str, missing)))
 
-        return _page_response(fingerprint, page, svg, warnings)
+            except CompileError as exc:
+                return self._failure(meta, exc.diagnostics)
+
+            for number in missing:
+                if number in rendered:
+                    self._write_page(doc, fingerprint, number, rendered[number])
+                    pages[number] = rendered[number]
+
+        return {
+            'diagnostics': warnings,
+            'fingerprint': fingerprint,
+            'ok': True,
+            'pages': _serialise_pages(pages),
+            'stale': False,
+        }
 
     # ── Background prefetching ──
 
@@ -491,12 +517,12 @@ class CompilerService:
 
     # ── Cache ──
 
-    def _cached_result(self, doc, meta):
+    def _cached_result(self, doc, meta, full):
         '''Build a result from cached pages, or ``None`` when the cache is unusable.'''
         fingerprint = meta['fingerprint']
         count       = meta['count']
         paged       = count > self.page_threshold
-        wanted      = [1] if paged else list(range(1, count + 1))
+        wanted      = [1] if paged and not full else list(range(1, count + 1))
         pages       = {}
 
         for number in wanted:
@@ -622,18 +648,6 @@ class CompilerService:
 
 
 # ── Module helpers ──
-
-
-def _page_response(fingerprint, page, svg, diagnostics=None):
-    '''Build the response for a single compiled page.'''
-    return {
-        'diagnostics': diagnostics or [],
-        'fingerprint': fingerprint,
-        'ok': True,
-        'page': page,
-        'stale': False,
-        'svg': svg,
-    }
 
 
 def _key(doc):

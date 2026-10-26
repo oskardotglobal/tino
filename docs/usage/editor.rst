@@ -298,10 +298,13 @@ Documents longer than
 :attr:`TINO_PAGED_THRESHOLD <tino.config.TINO_PAGED_THRESHOLD>` pages
 (10 by default) are compiled page by page: every change re-renders only the
 first page, so the preview updates as quickly as for a short document. The rest
-of the document is rendered in the background right after, and any page not
-ready yet is compiled on demand when you scroll to it. Compiled pages are cached
-until the document — or a file it imports — changes, so scrolling back and forth
-through a long document costs nothing.
+of the document is rendered in the background right after, and any pages not
+ready yet are compiled on demand, in batches, when you scroll to them. Compiled
+pages are cached until the document — or a file it imports — changes, so
+scrolling back and forth through a long document costs nothing.
+
+The first time you open a document in a session, it is compiled in full instead,
+behind a loading spinner, so every page is there from the start.
 
 DOCX export
 ~~~~~~~~~~~

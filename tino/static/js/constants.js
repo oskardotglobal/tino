@@ -52,6 +52,10 @@ export const PANEL_MAX_WIDTH = 500
 
 export const PAGE_PREFETCH_MARGIN = '600px'
 
+/** Most pages of a long document requested from the backend in one go. */
+
+export const PAGE_BATCH_SIZE = 10
+
 /** Sentinel returned by indexOf when an element is not found. */
 
 export const INDEX_NOT_FOUND = -1

@@ -10,6 +10,10 @@ import { PreviewZoom } from './preview-zoom.js'
  * on screen (dimmed) while the errors are reported in the editor and in the
  * banner above the preview, so a typo mid-edit does not make a long document
  * disappear and recompile from scratch.
+ *
+ * The first time a document is previewed in a session it is compiled in full,
+ * every page at once, behind a fullscreen loading spinner. Later revisions
+ * only fetch what is needed, lazily.
  */
 
 export class PreviewManager {
@@ -20,6 +24,7 @@ export class PreviewManager {
     this.app = app
     this.pages = new PreviewPages(app, () => this.compile())
     this._renderGen = 0
+    this._opened = new Set()
   }
 
   /** The file the preview renders: the pinned file, else the active file. */
@@ -144,6 +149,7 @@ export class PreviewManager {
 
   _discard() {
     this._renderGen += SINGLE_ITEM
+    PreviewManager._showLoading(false)
     this.pages.reset()
     this.app.els.previewPage.classList.remove('preview-outdated')
   }
@@ -155,10 +161,33 @@ export class PreviewManager {
       return
     this._renderGen += SINGLE_ITEM
     const gen = this._renderGen
+    const key = `${this.app.bucket}/${this.target}`
+    const full = !this._opened.has(key)
+    PreviewManager._showLoading(full)
+    try {
+      if (await this._compileTarget(gen, full))
+        this._opened.add(key)
+    }
+    finally {
+      if (gen === this._renderGen)
+        PreviewManager._showLoading(false)
+    }
+  }
+
+  /**
+   * Compile and render the target, unless a newer compile took over meanwhile.
+   * @returns {Promise<boolean>} Whether the compile reached the server.
+   */
+
+  async _compileTarget(gen, full) {
     const path = this.target
-    const result = await this._runCompile(path)
-    if (!result || gen !== this._renderGen)
-      return
+    const result = await this._runCompile(path, full)
+    if (result && gen === this._renderGen)
+      this._apply(path, result)
+    return Boolean(result)
+  }
+
+  _apply(path, result) {
     this.app.diagnostics.set(result.diagnostics || [])
     if (result.ok)
       this._render(path, result)
@@ -167,13 +196,19 @@ export class PreviewManager {
     this.app.presentation.syncControls()
   }
 
+  /** Show or hide the fullscreen spinner covering a document's first load. */
+
+  static _showLoading(visible) {
+    document.getElementById('loading-overlay').classList.toggle('hidden', !visible)
+  }
+
   /* Transport failures (offline, 404 for a file that vanished) are the only
      ones that reach the preview as an exception — a document that does not
      compile comes back as a regular response with diagnostics. */
 
-  async _runCompile(path) {
+  async _runCompile(path, full) {
     try {
-      return await this.app.api.compile(this.app.bucket, path)
+      return await this.app.api.compile(this.app.bucket, path, full)
     }
     catch (err) {
       if (!this.pages.doc) {

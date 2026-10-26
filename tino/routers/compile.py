@@ -7,7 +7,7 @@ event loop for the duration of a compile.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
@@ -93,6 +93,7 @@ def compile_docx(
 @router.get('/svg/{path:path}')
 def compile_svg(
     slug: str, path: str,
+    full: bool = False,
     user=Depends(require_viewer),
     svc: CompilerService = Depends(get_compiler_service),
 ):
@@ -100,28 +101,33 @@ def compile_svg(
 
     Short documents come back with all their pages inlined. Long ones (see
     ``TINO_PAGED_THRESHOLD``) only carry their first page and are marked
-    ``paged``; the client then fetches the remaining pages one by one.
+    ``paged``; the client then fetches the remaining pages in batches. With
+    ``full``, every page is returned regardless of the document's length.
     A failed compilation is not an HTTP error: it returns ``ok: false`` plus the
     diagnostics, so the client can keep showing the last successful render.
     '''
     logger.debug('Compiling SVG for %s/%s (user: %s)', slug, path, user.username)
     try:
-        return svc.compile_document(slug, path)
+        return svc.compile_document(slug, path, full=full)
 
     except FileNotFoundError as exc:
         raise HTTPException(404, 'File not found') from exc
 
 
-@router.get('/page/{page}/{path:path}')
-def compile_svg_page(
-    slug: str, path: str, page: int,
+@router.get('/pages/{path:path}')
+def compile_svg_pages(
+    slug: str, path: str,
+    pages: str = Query(pattern=r'^\d+(,\d+)*$'),
     user=Depends(require_viewer),
     svc: CompilerService = Depends(get_compiler_service),
 ):
-    '''Compile (or serve from cache) a single page of a long document.'''
-    logger.debug('Compiling page %d of %s/%s (user: %s)', page, slug, path, user.username)
+    '''Compile (or serve from cache) a batch of pages of a long document.
+
+    ``pages`` is a comma-separated list of 1-based page numbers.
+    '''
+    logger.debug('Compiling pages %s of %s/%s (user: %s)', pages, slug, path, user.username)
     try:
-        return svc.compile_page(slug, path, page)
+        return svc.compile_pages(slug, path, [int(page) for page in pages.split(',')])
 
     except FileNotFoundError as exc:
         raise HTTPException(404, 'File not found') from exc

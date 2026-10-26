@@ -1,4 +1,4 @@
-import { PAGE_PREFETCH_MARGIN, SINGLE_ITEM } from './constants.js'
+import { PAGE_BATCH_SIZE, PAGE_PREFETCH_MARGIN, SINGLE_ITEM } from './constants.js'
 
 /**
  * The page elements of the preview pane, and the lazy loading behind them.
@@ -6,8 +6,10 @@ import { PAGE_PREFETCH_MARGIN, SINGLE_ITEM } from './constants.js'
  * Short documents arrive fully compiled and are simply written into the pane.
  * Long ones (the backend decides, see `TINO_PAGED_THRESHOLD`) ship only their
  * first page plus a page count: one empty element per page is laid out, and
- * each page's SVG is compiled and fetched shortly before it scrolls into view.
- * The backend caches those pages, so scrolling back and forth costs nothing.
+ * the pages' SVGs are compiled and fetched in batches shortly before they
+ * scroll into view. The backend caches those pages, so scrolling back and
+ * forth costs nothing. Opening a document asks for every page up front (see
+ * {@link PreviewManager}), so only later revisions load lazily.
  *
  * Between revisions the elements are reused whenever the document keeps its
  * shape. That is what keeps the scroll position stable — and what lets the
@@ -73,10 +75,7 @@ export class PreviewPages {
   async ensureAll() {
     if (!this.doc || !this.doc.paged)
       return
-    for (const page of this._outdated()) {
-      // eslint-disable-next-line no-await-in-loop -- one page compiles at a time
-      await this.load(page)
-    }
+    await this.load(this._outdated())
   }
 
   // ── Internal ──
@@ -123,9 +122,9 @@ export class PreviewPages {
 
   _observe() {
     this._observer = new IntersectionObserver(entries => {
-      entries
+      this.load(entries
         .filter(entry => entry.isIntersecting)
-        .forEach(entry => this.load(entry.target))
+        .map(entry => entry.target))
     }, {
       root: this.app.els.previewViewport,
       rootMargin: PAGE_PREFETCH_MARGIN,
@@ -141,46 +140,62 @@ export class PreviewPages {
 
   _loadVisible() {
     const { bottom, top } = this.app.els.previewViewport.getBoundingClientRect()
-    this._outdated()
-      .filter(page => {
-        const box = page.getBoundingClientRect()
-        return box.bottom >= top && box.top <= bottom
-      })
-      .forEach(page => this.load(page))
+    this.load(this._outdated().filter(page => {
+      const box = page.getBoundingClientRect()
+      return box.bottom >= top && box.top <= bottom
+    }))
   }
 
-  /** Fetch one page of a paged document, unless it is current or in flight. */
+  /**
+   * Fetch pages of a paged document in batches of {@link PAGE_BATCH_SIZE},
+   * skipping those that are current or already in flight.
+   * @param {HTMLElement[]} pages - Page elements, in document order.
+   */
 
-  async load(page) {
+  async load(pages) {
     const { doc } = this
-    if (!doc || !doc.paged || page.dataset.loading)
+    if (!doc || !doc.paged)
       return
-    if (page.dataset.fingerprint === doc.fingerprint)
-      return
-    page.dataset.loading = 'true'
+    const wanted = pages.filter(
+      page => !page.dataset.loading && page.dataset.fingerprint !== doc.fingerprint,
+    )
+    wanted.forEach(page => {
+      page.dataset.loading = 'true'
+    })
     try {
-      const result = await this.app.api.compilePage(
-        this.app.bucket, doc.path, Number(page.dataset.page),
-      )
-      this._apply(doc, page, result)
+      for (let start = 0; start < wanted.length; start += PAGE_BATCH_SIZE) {
+        const batch = wanted.slice(start, start + PAGE_BATCH_SIZE)
+        // eslint-disable-next-line no-await-in-loop -- one batch compiles at a time
+        const result = await this.app.api.compilePages(
+          this.app.bucket, doc.path, batch.map(page => Number(page.dataset.page)),
+        )
+        if (!this._apply(doc, batch, result))
+          return
+      }
     }
     finally {
-      delete page.dataset.loading
+      wanted.forEach(page => {
+        delete page.dataset.loading
+      })
     }
   }
 
-  /* A page that comes back for a different revision than the one on screen
-     means the document changed underneath us, which is resolved by recompiling
-     instead of mixing revisions into one render. */
+  /* Pages that come back for a different revision than the one on screen
+     mean the document changed underneath us, which is resolved by recompiling
+     instead of mixing revisions into one render. Returns whether the batch
+     was applied, i.e. whether further batches are still worth fetching. */
 
-  _apply(doc, page, result) {
+  _apply(doc, batch, result) {
     if (this.doc !== doc)
-      return
+      return false
     if (!result.ok || result.fingerprint !== doc.fingerprint) {
       this._onStale()
-      return
+      return false
     }
-    this._fill(page, result.svg)
+    batch
+      .filter(page => page.dataset.page in result.pages)
+      .forEach(page => this._fill(page, result.pages[page.dataset.page]))
+    return true
   }
 
 }

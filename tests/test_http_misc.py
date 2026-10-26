@@ -1,5 +1,6 @@
 '''HTTP tests for search, API keys, fonts, compile, templates and misc endpoints.'''
 
+import json
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
@@ -143,6 +144,9 @@ def fake_typst(monkeypatch):
     def fake_run(cmd, **_kwargs):
         output = cmd[-1]
         if state['returncode'] == 0:
+            if '--deps' in cmd:
+                deps = {'inputs': [cmd[cmd.index('--root') + 2]]}
+                Path(cmd[cmd.index('--deps') + 1]).write_text(json.dumps(deps))
             if '{0p}' in output:
                 Path(output.replace('{0p}', '1').replace('{t}', '1')).write_text('<svg/>')
             else:
@@ -162,6 +166,27 @@ def test_compile_svg(login, doc, fake_typst):  # pylint: disable=unused-argument
     result = login(VIEWER).get('/api/buckets/proj/compile/svg/sub/doc.typ').json()
     assert result['ok'] is True
     assert result['pages'] == {'1': '<svg/>'}
+
+
+def test_compile_svg_full(login, doc, fake_typst):  # pylint: disable=unused-argument
+    result = login(VIEWER).get('/api/buckets/proj/compile/svg/sub/doc.typ?full=true').json()
+    assert result['ok'] is True
+    assert result['pages'] == {'1': '<svg/>'}
+
+
+def test_compile_pages(login, doc, fake_typst):  # pylint: disable=unused-argument
+    client = login(VIEWER)
+    client.get('/api/buckets/proj/compile/svg/sub/doc.typ')
+    result = client.get('/api/buckets/proj/compile/pages/sub/doc.typ?pages=1').json()
+    assert result['ok'] is True
+    assert result['pages'] == {'1': '<svg/>'}
+
+
+def test_compile_pages_rejects_bad_input(login, doc, fake_typst):  # pylint: disable=unused-argument
+    client = login(VIEWER)
+    client.get('/api/buckets/proj/compile/svg/sub/doc.typ')
+    assert client.get('/api/buckets/proj/compile/pages/sub/doc.typ?pages=x').status_code == 422
+    assert client.get('/api/buckets/proj/compile/pages/sub/doc.typ?pages=2').status_code == 404
 
 
 def test_compile_pdf(login, doc, fake_typst):  # pylint: disable=unused-argument

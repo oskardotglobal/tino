@@ -173,17 +173,22 @@ export class TinoAPI extends EditorAPI {
   /**
    * Compile a document. Short documents come back with every page inlined;
    * long ones carry only their first page and are flagged `paged`, their
-   * remaining pages being fetched with {@link TinoAPI#compilePage}.
+   * remaining pages being fetched with {@link TinoAPI#compilePages}.
+   * @param {boolean} [full] - Inline every page, even of a long document.
    */
 
-  compile(slug, path) {
-    return this._fetch(`${bucketPath(slug)}/compile/svg/${path}`)
+  compile(slug, path, full = false) {
+    const query = full ? '?full=true' : ''
+    return this._fetch(`${bucketPath(slug)}/compile/svg/${path}${query}`)
   }
 
-  /** Compile (or fetch from the server cache) one page of a long document. */
+  /**
+   * Compile (or fetch from the server cache) a batch of pages of a long document.
+   * @param {number[]} pages - 1-based page numbers.
+   */
 
-  compilePage(slug, path, page) {
-    return this._fetch(`${bucketPath(slug)}/compile/page/${page}/${path}`)
+  compilePages(slug, path, pages) {
+    return this._fetch(`${bucketPath(slug)}/compile/pages/${path}?pages=${pages.join(',')}`)
   }
 
   // ── Templates ──
